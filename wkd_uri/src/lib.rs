@@ -2,14 +2,16 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use sha1::{Sha1, Digest};
 
-
+/// Direct Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-10>
 #[derive(Debug)]
 pub struct DirectUri(String);
 
 #[derive(Debug)]
+/// Advanced Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-5>
 pub struct AdvancedUri(String);
 
 #[derive(Debug)]
+/// User Hash conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3>
 pub struct UserHash(String);
 
 use thiserror::Error;
@@ -18,25 +20,36 @@ use miette::Diagnostic;
 
 #[derive(Error, Diagnostic, Debug, PartialEq)]
 pub enum WkdUriError {
+    #[cfg(test)]
     #[error("User hash must be 32 characters long")]
-    #[diagnostic(code(wkd_uri::user_hash), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3"))]
+    #[diagnostic(code(wkd_uri::user_hash::from_string), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3"))]
     HashLengthError,
+    
+    #[cfg(test)]
+    #[error("Invalid Z32 encoding")]
+    #[diagnostic(code(wkd_uri::user_hash::from_string), url("https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt"))]
+    HashZ32EncodingError,
 
-    #[error("User ID must be in the format 'local_part@domain_part'")]
+    #[error("User ID must be in the format '{{local_part}}@{{domain_part}}'")]
     #[diagnostic(code(wkd_uri::parse_email), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-2"))]
     InvalidEmailError
 }
 
 impl UserHash {
-    pub fn from_string(s: &str) -> Result<UserHash, WkdUriError> {
+    #[cfg(test)]
+    fn from_string(s: &str) -> Result<UserHash, WkdUriError> {
         if s.len() != 32 {
             return Err(WkdUriError::HashLengthError);
+        }
+
+        if z32::decode(s.as_bytes()).is_err() {
+            return Err(WkdUriError::HashZ32EncodingError);
         }
         
         Ok(UserHash(s.to_string()))
     }
 
-    pub fn new(local_part: &str) -> UserHash {
+    fn new(local_part: &str) -> UserHash {
         let mut hasher = Sha1::new();
         let local_part = local_part.to_string().to_ascii_lowercase();
         hasher.update(local_part);
@@ -105,12 +118,18 @@ fn parse_email(email: &str) -> Result<(&str, &str), WkdUriError> {
     Ok((parts[0], parts[1]))
 }
 
+/// WkdUri struct that contains the domain_part, user_hash, local_part, advanced_uri and direct_uri
 #[derive(Debug)]
 pub struct WkdUri {
+    /// The domain part of the email address
     pub domain_part: String,
+    /// User Hash conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3>
     pub user_hash: UserHash,
+    /// The local part of the email address
     pub local_part: String,
+    /// Advanced Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-5>
     pub advanced_uri: AdvancedUri,
+    /// Direct Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-10>
     pub direct_uri: DirectUri,
 }
 
@@ -167,10 +186,18 @@ mod tests {
     }
 
     #[test]
-    fn user_hash_from_str_err() {
+    fn user_hash_from_str_err_length() {
         let test_user_hash = UserHash::from_string("123");
         assert!(test_user_hash.is_err());
         assert_eq!(test_user_hash.unwrap_err(), WkdUriError::HashLengthError);
+    }
+
+    #[test]
+    fn user_hash_from_str_err_z32_encoding() {
+        let test_user_hash = UserHash::from_string("iy9q119eutrkn8s1mk4r39qejnbu3n5-");
+        
+        assert!(test_user_hash.is_err());
+        assert_eq!(test_user_hash.unwrap_err(), WkdUriError::HashZ32EncodingError);
     }
 
     #[test]
