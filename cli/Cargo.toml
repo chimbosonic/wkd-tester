@@ -3,7 +3,7 @@ name = "wkd-tester"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-author = ["Alexis Lowe <alexis.lowe@chimbosonic.com>"]
+authors = ["Alexis Lowe <alexis.lowe@chimbosonic.com>"]
 description = "A CLI tool for testing and debugging OpenPGP Web Key Directory (WKD)"
 keywords = ["cli", "wkd", "OpenPGP"]
 
@@ -15,4 +15,7 @@ path = "src/main.rs"
 clap = { version = "4.5.29", features = ["derive"] }
 miette = { version = "7.5.0", features = ["fancy"] }
 wkd_uri = { path = "../wkd_uri" }
-
+wkd_fetch = { path = "../wkd_fetch" }
+wkd_load = { path = "../wkd_load" }
+tokio = { version = "1.43.0", features = ["full"] }
+thiserror = "2.0.11"

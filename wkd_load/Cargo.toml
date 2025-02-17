@@ -1,0 +1,11 @@
+[package]
+name = "wkd_load"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+bytes = "1.10.0"
+miette = "7.5.0"
+sequoia-openpgp = "1.22.0"
+thiserror = "2.0.11"

@@ -1,6 +1,6 @@
+use sha1::{Digest, Sha1};
 use std::fmt::Display;
 use std::fmt::Formatter;
-use sha1::{Sha1, Digest};
 
 /// Direct Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-10>
 #[derive(Debug)]
@@ -14,9 +14,8 @@ pub struct AdvancedUri(String);
 /// User Hash conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3>
 pub struct UserHash(String);
 
-use thiserror::Error;
 use miette::Diagnostic;
-
+use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug, PartialEq)]
 pub enum WkdUriError {
@@ -24,15 +23,18 @@ pub enum WkdUriError {
     #[error("User hash must be 32 characters long")]
     #[diagnostic(code(wkd_uri::user_hash::from_string), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3"))]
     HashLengthError,
-    
+
     #[cfg(test)]
     #[error("Invalid Z32 encoding")]
-    #[diagnostic(code(wkd_uri::user_hash::from_string), url("https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt"))]
+    #[diagnostic(
+        code(wkd_uri::user_hash::from_string),
+        url("https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt")
+    )]
     HashZ32EncodingError,
 
     #[error("User ID must be in the format '{{local_part}}@{{domain_part}}'")]
     #[diagnostic(code(wkd_uri::parse_email), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-2"))]
-    InvalidEmailError
+    InvalidEmailError,
 }
 
 impl UserHash {
@@ -45,7 +47,7 @@ impl UserHash {
         if z32::decode(s.as_bytes()).is_err() {
             return Err(WkdUriError::HashZ32EncodingError);
         }
-        
+
         Ok(UserHash(s.to_string()))
     }
 
@@ -62,24 +64,24 @@ impl UserHash {
 }
 
 impl Display for UserHash {
-    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error>  {
+    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "{}", self.0)
     }
 }
 
 impl Display for DirectUri {
-    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error>  {
+    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "{}", self.0)
     }
 }
 
 impl Display for AdvancedUri {
-    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error>  {
+    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "{}", self.0)
     }
 }
 
-trait Uri<T> {
+pub trait Uri<T> {
     const SCHEME: &str = "https://";
     const PATH: &str;
     const SUBDOMAIN: &str = "openpgpkey";
@@ -164,15 +166,21 @@ mod tests {
 
     #[test]
     fn generate_direct_uri() {
-        let test_direct_uri =
-            DirectUri::new(DOMAIN_PART, LOCAL_PART, &UserHash::from_string(USER_HASH).unwrap());
+        let test_direct_uri = DirectUri::new(
+            DOMAIN_PART,
+            LOCAL_PART,
+            &UserHash::from_string(USER_HASH).unwrap(),
+        );
         assert_eq!(test_direct_uri.to_string(), DIRECT_URI.to_string());
     }
 
     #[test]
     fn generate_advanced_uri() {
-        let test_advanced_uri =
-            AdvancedUri::new(DOMAIN_PART, LOCAL_PART, &UserHash::from_string(USER_HASH).unwrap());
+        let test_advanced_uri = AdvancedUri::new(
+            DOMAIN_PART,
+            LOCAL_PART,
+            &UserHash::from_string(USER_HASH).unwrap(),
+        );
         assert_eq!(test_advanced_uri.to_string(), ADVANCED_URI.to_string());
     }
 
@@ -195,9 +203,12 @@ mod tests {
     #[test]
     fn user_hash_from_str_err_z32_encoding() {
         let test_user_hash = UserHash::from_string("iy9q119eutrkn8s1mk4r39qejnbu3n5-");
-        
+
         assert!(test_user_hash.is_err());
-        assert_eq!(test_user_hash.unwrap_err(), WkdUriError::HashZ32EncodingError);
+        assert_eq!(
+            test_user_hash.unwrap_err(),
+            WkdUriError::HashZ32EncodingError
+        );
     }
 
     #[test]
@@ -211,7 +222,10 @@ mod tests {
     fn user_hash_new_non_ascii() {
         let test_user_hash = UserHash::new("Grüße.Jürgen");
         assert_eq!(test_user_hash.to_string().len(), 32);
-        assert_eq!(test_user_hash.to_string(), "izrmh5mqsi4zyh6njd4sxxh4g7xjrxq1");
+        assert_eq!(
+            test_user_hash.to_string(),
+            "izrmh5mqsi4zyh6njd4sxxh4g7xjrxq1"
+        );
     }
 
     #[test]
