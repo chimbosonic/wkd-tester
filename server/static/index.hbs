@@ -6,17 +6,34 @@
     <title>Web Key Directory - Tester</title>
     <link rel="icon" type="image/x-icon" href="https://chimbosonic.com/favicon.ico">
     <style>
+        body {
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* Styled description container */
+        .description {
+            background-color: #fff;
+            padding: 20px;
+            border-left: 4px solid #009879;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .description p {
+            margin-bottom: 16px;
+        }
+
+        .description ul {
+            margin: 10px 0 10px 20px;
+        }
+
         table {
-            font-family: Arial, sans-serif;
             border-collapse: collapse;
-
-                {
-                    {
-                    !-- width: 100%;
-                    --
-                }
-            }
-
+            width: 100%;
             margin-bottom: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
@@ -45,110 +62,163 @@
         tbody tr:last-of-type {
             border-bottom: 2px solid #009879;
         }
-    </style>
 
+        /* API section styling */
+        .api-section {
+            background-color: #fff;
+            padding: 20px;
+            border-left: 4px solid #009879;
+            border-radius: 5px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .api-section pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .api-section code {
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Web Key Directory - Tester</h1>
-    <p><a href="https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/">OpenPGP Web Key Directory</a> is a
-        key discovery scheme that allows discovering OpenPGP keys from e-mail addresses.
-    <p>For example when looking up <code>Joe.Doe@example.org</code> keys would be located at: </p>
-    <ul>
-        <li>For the Direct Method: <p>
-                <code>https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
-            </p>
-        </li>
-        <li>For the Advanced Method: <p>
-                <code>https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
-            </p>
-        </li>
-    </ul>
-    <h2>Lookup</h2>
-    <p>For testing purposes, you can use the following form to look up keys or generate the locations you need to store
-        your binary formated key:</p>
-    <form action="/" method="post">
-        <label for="email">E-mail address:</label>
-        <input type="email" id="email" name="email" required>
-        <input type="submit" value="Lookup">
-    </form>
-    {{#each this}}
-    <h3>Results for {{this.user_id}}</h3>
-    <table>
-        <thead>
-            <tr>
-                <th></th>
-                <th>Direct Method</th>
-                <th>Advanced Method</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>URI:</td>
-                <td>{{this.direct_method.uri}}</td>
-                <td>{{this.advanced_method.uri}}</td>
-            </tr>
-            <tr>
-                <td>Key Fingerprint:</td>
-                <td>{{this.direct_method.key.fingerprint}}</td>
-                <td>{{this.advanced_method.key.fingerprint}}</td>
-            </tr>
-            <tr>
-                <td>Errors:</td>
+    <div class="description">
+        <p>
+            The <a href="https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/">OpenPGP Web Key
+                Directory</a>
+            is a key discovery scheme that allows you to locate OpenPGP keys using an e-mail address.
+        </p>
+        <p>
+            OpenPGP defines User IDs (which include e-mail addresses) as UTF-8 strings. To simplify storing these in a
+            file system, implementations first convert all uppercase ASCII characters in the local-part of the address
+            to
+            lowercase (non-ASCII characters remain unchanged). This normalized local-part is then hashed using SHA-1,
+            and the
+            resulting 160-bit digest is encoded with the Z-Base-32 method, producing a fixed-length 32-character string.
+        </p>
+        <p>
+            Two methods are defined to form the lookup URI:
+        </p>
+        <ul>
+            <li>
+                <strong>Advanced Method</strong>: Requires a dedicated <code>openpgpkey</code> sub-domain. The URI is
+                built by
+                concatenating:
+                <br><code>https://openpgpkey.&lt;domain&gt;/.well-known/openpgpkey/&lt;domain&gt;/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
+                <br>
+                For example, for <code>Joe.Doe@Example.ORG</code>:
+                <br><code>https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+            </li>
+            <li>
+                <strong>Direct Method</strong>: Does not require additional DNS entries. The URI is built by
+                concatenating:
+                <br><code>https://&lt;domain&gt;/.well-known/openpgpkey/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
+                <br>
+                For example, for <code>Joe.Doe@Example.ORG</code>:
+                <br><code>https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+            </li>
+        </ul>
+        <p>
+            According to the standard, implementations must first try the Advanced Method. Only if the required
+            sub-domain does
+            not exist should the Direct Method be used. Note that a non-responding server does not automatically trigger
+            a
+            fallback.
+        </p>
+    </div>
+    <div class="api-section">
+        <h2>Lookup</h2>
+        <p>For testing purposes, you can use the following form to look up keys or generate the locations you need to
+            store
+            your
+            binary formatted key:</p>
+        <form action="/" method="post">
+            <label for="email">E-mail address:</label>
+            <input type="email" id="email" name="email" required>
+            <input type="submit" value="Lookup">
+        </form>
 
-                <td>
-                    {{#each this.direct_method.errors}}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Error Code</th>
-                                <th>Error Message</th>
-                            </tr>
-                        </thead>
-
-                        <tr>
-                            <td>{{this.name}}</td>
-                            <td>{{this.message}}</td>
-                        </tr>
-
-                    </table>
-
-                    {{/each}}
-                </td>
-
-                <td>
-                    {{#each this.advanced_method.errors}}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Error Code</th>
-                                <th>Error Message</th>
-                            </tr>
-                        </thead>
-
-                        <tr>
-                            <td>{{this.name}}</td>
-                            <td>{{this.message}}</td>
-                        </tr>
-
-                    </table>
-                    {{/each}}
-                </td>
-
-            </tr>
-        </tbody>
-    </table>
-    {{/each}}
-
-    <h2>API Usage</h2>
-
-    <p>There is also API that returns the same results in JSON format. For example to look up
-        <code>Joe.Doe@example.org</code> using the API
-    </p>
-    <p>You would hit the following endpoint: <a href="/api/Joe.Doe@example.org">/api/Joe.Doe@example.org</a>. Which
-        would return the following JSON:</p>
-    <pre><code>
-{
+        {{#each this}}
+        <h3>Results for {{this.user_id}}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Direct Method</th>
+                    <th>Advanced Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>URI:</td>
+                    <td>{{this.direct_method.uri}}</td>
+                    <td>{{this.advanced_method.uri}}</td>
+                </tr>
+                <tr>
+                    <td>Key Fingerprint:</td>
+                    <td>{{this.direct_method.key.fingerprint}}</td>
+                    <td>{{this.advanced_method.key.fingerprint}}</td>
+                </tr>
+                <tr>
+                    <td>Errors:</td>
+                    <td>
+                        {{#each this.direct_method.errors}}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Error Code</th>
+                                    <th>Error Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{this.name}}</td>
+                                    <td>{{this.message}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {{/each}}
+                    </td>
+                    <td>
+                        {{#each this.advanced_method.errors}}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Error Code</th>
+                                    <th>Error Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{this.name}}</td>
+                                    <td>{{this.message}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {{/each}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        {{/each}}
+    </div>
+    <div class="api-section">
+        <h2>API Usage</h2>
+        <p>
+            There is also an API that returns the same results in JSON format. For example, to look up
+            <code>Joe.Doe@example.org</code> using the API:
+        </p>
+        <p>
+            You would hit the following endpoint: <a href="/api/Joe.Doe@example.org">/api/Joe.Doe@example.org</a>,
+            which would return JSON similar to:
+        </p>
+        <pre><code>{
   "user_id": "Joe.Doe@example.org",
   "direct_method": {
     "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
@@ -164,9 +234,10 @@
     },
     "errors": []
   }
-}
-    </code></pre>
+}</code></pre>
+    </div>
 </body>
+
 <footer>
     <p>Hosted by <a href="https://chimbosonic.com">Alexis Lowe</a> - Source code available on <a
             href="https://github.com/chimbosonic/wkd-tester">GitHub</a></p>
