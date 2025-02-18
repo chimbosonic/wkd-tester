@@ -1,6 +1,7 @@
 use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
+use actix_governor::{Governor, GovernorConfigBuilder};
 mod render;
 mod wkd_result;
 
@@ -39,6 +40,10 @@ async fn main() -> std::io::Result<()> {
     let host = "0.0.0.0";
     let port = 7070;
 
+    let governor_conf = GovernorConfigBuilder::default()
+    .finish()
+    .unwrap();
+
     let mut handlebars = Handlebars::new();
     handlebars
         .register_templates_directory("./static/", DirectorySourceOptions::default())
@@ -53,6 +58,7 @@ async fn main() -> std::io::Result<()> {
             .service(lookup)
             .service(api)
             .wrap(Logger::default())
+            .wrap(Governor::new(&governor_conf))
     })
     .bind((host, port))?
     .run()
