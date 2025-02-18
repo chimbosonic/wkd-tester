@@ -9,7 +9,14 @@
         table {
             font-family: Arial, sans-serif;
             border-collapse: collapse;
-            {{!-- width: 100%; --}}
+
+                {
+                    {
+                    !-- width: 100%;
+                    --
+                }
+            }
+
             margin-bottom: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
@@ -88,9 +95,9 @@
             </tr>
             <tr>
                 <td>Errors:</td>
-                {{#each this.direct_method.errors}}
-                <td>
 
+                <td>
+                    {{#each this.direct_method.errors}}
                     <table>
                         <thead>
                             <tr>
@@ -105,10 +112,12 @@
                         </tr>
 
                     </table>
+
+                    {{/each}}
                 </td>
-                {{/each}}
-                {{#each this.advanced_method.errors}}
+
                 <td>
+                    {{#each this.advanced_method.errors}}
                     <table>
                         <thead>
                             <tr>
@@ -123,8 +132,9 @@
                         </tr>
 
                     </table>
+                    {{/each}}
                 </td>
-                {{/each}}
+
             </tr>
         </tbody>
     </table>
