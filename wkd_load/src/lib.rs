@@ -10,8 +10,13 @@ pub enum WkdLoadError {
     FailedToParseKey(#[from] anyhow::Error),
 }
 
+#[derive(Debug)]
+pub struct WkdKey {
+    pub fingerprint: String,
+}
+
 /// Load a key from a byte array and return Ok(()) if successful
-pub fn load_key(data: Bytes) -> Result<String, WkdLoadError> {
+pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     let cert = match Cert::from_bytes(&data) {
         Ok(cert) => cert,
         Err(err) => {
@@ -19,7 +24,9 @@ pub fn load_key(data: Bytes) -> Result<String, WkdLoadError> {
         }
     };
 
-    Ok(cert.fingerprint().to_string())
+    Ok(WkdKey {
+        fingerprint: cert.fingerprint().to_string(),
+    })
 }
 
 #[cfg(test)]

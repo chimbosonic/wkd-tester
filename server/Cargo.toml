@@ -1,0 +1,19 @@
+[package]
+name = "wkd-tester-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.9.0"
+wkd_uri = { path = "../wkd_uri" }
+wkd_fetch = { path = "../wkd_fetch" }
+wkd_load = { path = "../wkd_load" }
+thiserror = "2.0.11"
+serde_json = "1.0.138"
+serde = { version = "1.0.217", features = ["serde_derive"] }
+handlebars = { version = "6.3.1", features = ["dir_source"] }
+env_logger = "0.11.6"
+log = "0.4.25"
+
+[dev-dependencies]
+tokio = { version = "1.43.0", features = ["full"] }

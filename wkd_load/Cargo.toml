@@ -7,5 +7,5 @@ edition = "2021"
 anyhow = "1.0.95"
 bytes = "1.10.0"
 miette = "7.5.0"
-sequoia-openpgp = "1.22.0"
+sequoia-openpgp = { version = "1.22.0", default-features = false, features = ["crypto-openssl"] }
 thiserror = "2.0.11"

@@ -136,8 +136,8 @@ pub struct WkdUri {
 }
 
 impl WkdUri {
-    pub fn new(user_id: String) -> Result<WkdUri, WkdUriError> {
-        let (local_part, domain_part) = parse_email(&user_id)?;
+    pub fn new(user_id: &str) -> Result<WkdUri, WkdUriError> {
+        let (local_part, domain_part) = parse_email(user_id)?;
 
         let user_hash = UserHash::new(local_part);
         let advanced_uri = AdvancedUri::new(domain_part, local_part, &user_hash);
@@ -245,14 +245,14 @@ mod tests {
 
     #[test]
     fn wkd_uri_new_invalid_email() {
-        let test_wkd_uri = WkdUri::new("test".to_string());
+        let test_wkd_uri = WkdUri::new("test");
         assert!(test_wkd_uri.is_err());
         assert_eq!(test_wkd_uri.unwrap_err(), WkdUriError::InvalidEmailError);
     }
 
     #[test]
     fn wkd_uri_new() {
-        let test_wkd_uri = WkdUri::new(format!("{LOCAL_PART}@{DOMAIN_PART}"));
+        let test_wkd_uri = WkdUri::new(&format!("{LOCAL_PART}@{DOMAIN_PART}"));
         assert!(test_wkd_uri.is_ok());
         let test_wkd_uri = test_wkd_uri.unwrap();
 

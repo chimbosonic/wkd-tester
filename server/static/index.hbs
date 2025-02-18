@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Web Key Directory - Tester</title>
+    <link rel="icon" type="image/x-icon" href="https://chimbosonic.com/favicon.ico">
+    <style>
+        table {
+            font-family: Arial, sans-serif;
+            border-collapse: collapse;
+            {{!-- width: 100%; --}}
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 12px 15px;
+            vertical-align: top;
+        }
+
+        thead tr {
+            background-color: #009879;
+            color: #ffffff;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #dddddd;
+        }
+
+        tbody tr:nth-of-type(even) {
+            background-color: #f3f3f3;
+        }
+
+        tbody tr:last-of-type {
+            border-bottom: 2px solid #009879;
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>Web Key Directory - Tester</h1>
+    <p><a href="https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/">OpenPGP Web Key Directory</a> is a
+        key discovery scheme that allows discovering OpenPGP keys from e-mail addresses.
+    <p>For example when looking up <code>Joe.Doe@example.org</code> keys would be located at: </p>
+    <ul>
+        <li>For the Direct Method: <p>
+                <code>https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+            </p>
+        </li>
+        <li>For the Advanced Method: <p>
+                <code>https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+            </p>
+        </li>
+    </ul>
+    <h2>Lookup</h2>
+    <p>For testing purposes, you can use the following form to look up keys or generate the locations you need to store
+        your binary formated key:</p>
+    <form action="/" method="post">
+        <label for="email">E-mail address:</label>
+        <input type="email" id="email" name="email" required>
+        <input type="submit" value="Lookup">
+    </form>
+    {{#each this}}
+    <h3>Results for {{this.user_id}}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>Direct Method</th>
+                <th>Advanced Method</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>URI:</td>
+                <td>{{this.direct_method.uri}}</td>
+                <td>{{this.advanced_method.uri}}</td>
+            </tr>
+            <tr>
+                <td>Key Fingerprint:</td>
+                <td>{{this.direct_method.key.fingerprint}}</td>
+                <td>{{this.advanced_method.key.fingerprint}}</td>
+            </tr>
+            <tr>
+                <td>Errors:</td>
+                {{#each this.direct_method.errors}}
+                <td>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>Error Message</th>
+                            </tr>
+                        </thead>
+
+                        <tr>
+                            <td>{{this.name}}</td>
+                            <td>{{this.message}}</td>
+                        </tr>
+
+                    </table>
+                </td>
+                {{/each}}
+                {{#each this.advanced_method.errors}}
+                <td>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>Error Message</th>
+                            </tr>
+                        </thead>
+
+                        <tr>
+                            <td>{{this.name}}</td>
+                            <td>{{this.message}}</td>
+                        </tr>
+
+                    </table>
+                </td>
+                {{/each}}
+            </tr>
+        </tbody>
+    </table>
+    {{/each}}
+
+    <h2>API Usage</h2>
+
+    <p>There is also API that returns the same results in JSON format. For example to look up
+        <code>Joe.Doe@example.org</code> using the API
+    </p>
+    <p>You would hit the following endpoint: <a href="/api/Joe.Doe@example.org">/api/Joe.Doe@example.org</a>. Which
+        would return the following JSON:</p>
+    <pre><code>
+{
+  "user_id": "Joe.Doe@example.org",
+  "direct_method": {
+    "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
+    "key": {
+      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6"
+    },
+    "errors": []
+  },
+  "advanced_method": {
+    "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
+    "key": {
+      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6"
+    },
+    "errors": []
+  }
+}
+    </code></pre>
+</body>
+<footer>
+    <p>Hosted by <a href="https://chimbosonic.com">Alexis Lowe</a> - Source code available on <a
+            href="https://github.com/chimbosonic/wkd-tester">GitHub</a></p>
+</footer>
+
+</html>

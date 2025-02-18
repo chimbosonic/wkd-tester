@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "cli", "wkd_fetch", "wkd_load",
+    "cli", "server", "wkd_fetch", "wkd_load",
     "wkd_uri",
 ]
 resolver = "2"

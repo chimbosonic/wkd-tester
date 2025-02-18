@@ -1,8 +1,8 @@
 use clap::Parser;
 use miette::Report;
 use miette::Result;
-use wkd_fetch::WkdFetchError;
-use wkd_fetch::{fetch_uri, WkdFetch};
+use wkd_fetch::WkdFetch;
+use wkd_fetch::WkdFetchUriResult;
 use wkd_load::load_key;
 use wkd_uri::WkdUri;
 
@@ -19,51 +19,44 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let user_id = args.user_id;
 
-    let wkd_uri = WkdUri::new(user_id)?;
+    let wkd_uri = WkdUri::new(&user_id)?;
 
     println!("Advanced method URI: {}", wkd_uri.advanced_uri);
     println!("Direct method URI: {}", wkd_uri.direct_uri);
 
-    let wkd_fetch_advanced = fetch_uri(&wkd_uri.advanced_uri).await;
-    let wkd_fetch_direct = fetch_uri(&wkd_uri.direct_uri).await;
+    let wkd_fetch = WkdFetch::fetch(&wkd_uri).await;
 
-    unwrap_wkd_fetch(wkd_fetch_advanced, "Advanced");
-    unwrap_wkd_fetch(wkd_fetch_direct, "Direct");
+    unwrap_wkd_fetch(wkd_fetch.advanced_method, "Advanced");
+    unwrap_wkd_fetch(wkd_fetch.direct_method, "Direct");
 
     Ok(())
 }
 
-fn unwrap_wkd_fetch(wkd_fetch: Result<WkdFetch, WkdFetchError>, method: &str) {
-    match wkd_fetch {
-        Ok(wkd_fetch) => {
-            if !wkd_fetch.errors.is_empty() {
-                println!("{method} method fetch was successful with warnings:");
-                for error in wkd_fetch.errors {
+fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
+    if let Some(data) = wkd_fetch.data {
+        if !wkd_fetch.errors.is_empty() {
+            println!("{method} method fetch was successful with warnings:");
+            for error in wkd_fetch.errors {
+                println!("{:?}", Report::new(error));
+            }
+        } else {
+            println!("{method} method fetch was successful");
+            match load_key(data) {
+                Ok(key) => {
+                    println!(
+                        "{method} method key loading succeed with fingerprint: {}",
+                        key.fingerprint
+                    );
+                }
+                Err(error) => {
+                    println!("{method} method key loading failed with error:");
                     println!("{:?}", Report::new(error));
                 }
-            } else {
-                println!("{method} method fetch was successful");
-            }
-
-            if let Some(data) = wkd_fetch.data {
-                match load_key(data) {
-                    Ok(fingerprint) => {
-                        println!(
-                            "{method} method key loading succeed with fingerprint: {}",
-                            fingerprint
-                        );
-                    }
-                    Err(error) => {
-                        println!("{method} method key loading failed with error:");
-                        println!("{:?}", Report::new(error));
-                    }
-                };
-            } else {
-                println!("{method} method fetch returned no data");
-            }
+            };
         }
-        Err(error) => {
-            println!("{method} method fetch failed with error:");
+    } else {
+        println!("{method} method fetch failed with error:");
+        for error in wkd_fetch.errors {
             println!("{:?}", Report::new(error));
         }
     }

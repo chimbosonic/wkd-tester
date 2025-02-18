@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use reqwest::Url;
-use wkd_uri::Uri;
+use wkd_uri::{Uri, WkdUri};
 
 use miette::Diagnostic;
 use thiserror::Error;
@@ -31,18 +31,41 @@ pub enum WkdFetchError {
 
     #[error("Status code is not 200")]
     #[diagnostic(code(wkd_fetch))]
-    StatusNot200,
+    StatusNot200(u16),
+}
+
+pub struct WkdFetch {
+    pub direct_method: WkdFetchUriResult,
+    pub advanced_method: WkdFetchUriResult,
+}
+
+impl WkdFetch {
+    pub async fn fetch(wkd_uri: &WkdUri) -> WkdFetch {
+        let direct_method = fetch_uri(&wkd_uri.direct_uri).await;
+        let advanced_method = fetch_uri(&wkd_uri.advanced_uri).await;
+
+        WkdFetch {
+            direct_method: direct_method.unwrap_or_else(|err| WkdFetchUriResult {
+                errors: vec![err],
+                data: None,
+            }),
+            advanced_method: advanced_method.unwrap_or_else(|err| WkdFetchUriResult {
+                errors: vec![err],
+                data: None,
+            }),
+        }
+    }
 }
 
 #[derive(Debug)]
-pub struct WkdFetch {
+pub struct WkdFetchUriResult {
     pub errors: Vec<WkdFetchError>,
     pub data: Option<Bytes>,
 }
 
-pub async fn fetch_uri<T>(
+async fn fetch_uri<T>(
     uri: &(impl Uri<T> + std::fmt::Debug + std::string::ToString),
-) -> Result<WkdFetch, WkdFetchError> {
+) -> Result<WkdFetchUriResult, WkdFetchError> {
     let url = match Url::parse(&uri.to_string()) {
         Ok(url) => url,
         Err(err) => {
@@ -57,13 +80,14 @@ pub async fn fetch_uri<T>(
         }
     };
 
-    let mut result = WkdFetch {
+    let mut result = WkdFetchUriResult {
         errors: Vec::new(),
         data: None,
     };
 
-    if response.status().as_u16() != 200 {
-        return Err(WkdFetchError::StatusNot200);
+    let status = response.status().as_u16();
+    if status != 200 {
+        return Err(WkdFetchError::StatusNot200(status));
     }
 
     if let Some(header_value) = response.headers().get("content-type") {
@@ -174,7 +198,10 @@ mod tests {
 
         let result = fetch_uri(&test_uri).await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), WkdFetchError::StatusNot200));
+        assert!(matches!(
+            result.unwrap_err(),
+            WkdFetchError::StatusNot200(404)
+        ));
         mock.assert();
     }
 
