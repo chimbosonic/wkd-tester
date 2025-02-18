@@ -11,7 +11,7 @@ pub enum WkdFetchError {
     #[diagnostic(code(wkd_fetch))]
     WkdUriNotValidUrl(#[from] url::ParseError),
 
-    #[error("WKD URI provided is not a valid URL")]
+    #[error("Failed to fetch given URL")]
     #[diagnostic(code(wkd_fetch))]
     FailedToFetchUrl(#[from] reqwest::Error),
 
