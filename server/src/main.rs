@@ -36,7 +36,7 @@ async fn lookup(form: web::Form<FormData>, hb: web::Data<Handlebars<'_>>) -> Htt
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let host = "127.0.0.1";
+    let host = "0.0.0.0";
     let port = 7070;
 
     let mut handlebars = Handlebars::new();
