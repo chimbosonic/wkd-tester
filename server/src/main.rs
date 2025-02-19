@@ -1,7 +1,8 @@
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::http::header::CACHE_CONTROL;
 use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
-use actix_governor::{Governor, GovernorConfigBuilder};
 mod render;
 mod wkd_result;
 
@@ -18,7 +19,11 @@ async fn api(user_id: web::Path<String>) -> impl Responder {
 
 #[get("/")]
 async fn index_get(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
-    render(hb, "index", &json!({}))
+    let mut response = render(hb, "index", &json!({}));
+    response
+        .headers_mut()
+        .insert(CACHE_CONTROL, "public, max-age=604800".parse().unwrap());
+    response
 }
 
 #[derive(Deserialize)]
@@ -40,9 +45,7 @@ async fn main() -> std::io::Result<()> {
     let host = "0.0.0.0";
     let port = 7070;
 
-    let governor_conf = GovernorConfigBuilder::default()
-    .finish()
-    .unwrap();
+    let governor_conf = GovernorConfigBuilder::default().finish().unwrap();
 
     let mut handlebars = Handlebars::new();
     handlebars
