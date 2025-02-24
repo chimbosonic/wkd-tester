@@ -33,16 +33,22 @@
 
         table {
             border-collapse: collapse;
-            width: 100%;
             margin-bottom: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-table {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+            /* Optional spacing */
         }
 
         th,
         td {
             border: 1px solid #dddddd;
             text-align: left;
-            padding: 12px 15px;
             vertical-align: top;
         }
 
@@ -146,66 +152,68 @@
 
         {{#each this}}
         <h3>Results for {{this.user_id}}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Direct Method</th>
-                    <th>Advanced Method</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>URI:</td>
-                    <td>{{this.direct_method.uri}}</td>
-                    <td>{{this.advanced_method.uri}}</td>
-                </tr>
-                <tr>
-                    <td>Key Fingerprint:</td>
-                    <td>{{this.direct_method.key.fingerprint}}</td>
-                    <td>{{this.advanced_method.key.fingerprint}}</td>
-                </tr>
-                <tr>
-                    <td>Errors:</td>
-                    <td>
-                        {{#each this.direct_method.errors}}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Error Code</th>
-                                    <th>Error Message</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{{this.name}}</td>
-                                    <td>{{this.message}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {{/each}}
-                    </td>
-                    <td>
-                        {{#each this.advanced_method.errors}}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Error Code</th>
-                                    <th>Error Message</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{{this.name}}</td>
-                                    <td>{{this.message}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {{/each}}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="result-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Direct Method</th>
+                        <th>Advanced Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>URI:</td>
+                        <td><a href="{{this.direct_method.uri}}">{{this.direct_method.uri}}</a></td>
+                        <td><a href="{{this.advanced_method.uri}}">{{this.advanced_method.uri}}</a></td>
+                    </tr>
+                    <tr>
+                        <td>Key Fingerprint:</td>
+                        <td>{{this.direct_method.key.fingerprint}}</td>
+                        <td>{{this.advanced_method.key.fingerprint}}</td>
+                    </tr>
+                    <tr>
+                        <td>Errors:</td>
+                        <td>
+                            {{#each this.direct_method.errors}}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Error Code</th>
+                                        <th>Error Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{this.name}}</td>
+                                        <td>{{this.message}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {{/each}}
+                        </td>
+                        <td>
+                            {{#each this.advanced_method.errors}}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Error Code</th>
+                                        <th>Error Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{this.name}}</td>
+                                        <td>{{this.message}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {{/each}}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         {{/each}}
     </div>
     <div class="api-section">
