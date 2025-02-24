@@ -121,7 +121,7 @@ mod tests {
 
     use super::*;
     use mockito::ServerGuard;
-    use wkd_uri::{Uri, UserHash};
+    use wkd::uri::{Uri, UserHash};
 
     #[derive(Debug)]
     pub struct TestUri(String);
