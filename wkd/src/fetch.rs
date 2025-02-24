@@ -32,6 +32,10 @@ pub enum WkdFetchError {
     #[error("Status code is not 200")]
     #[diagnostic(code(wkd_fetch))]
     StatusNot200(u16),
+
+    #[error("Failed existence cheack with HEAD Method")]
+    #[diagnostic(code(wkd_fetch))]
+    FailedHeadMethod,
 }
 
 pub struct WkdFetch {
@@ -45,14 +49,8 @@ impl WkdFetch {
         let advanced_method = fetch_uri(&wkd_uri.advanced_uri).await;
 
         WkdFetch {
-            direct_method: direct_method.unwrap_or_else(|err| WkdFetchUriResult {
-                errors: vec![err],
-                data: None,
-            }),
-            advanced_method: advanced_method.unwrap_or_else(|err| WkdFetchUriResult {
-                errors: vec![err],
-                data: None,
-            }),
+            direct_method,
+            advanced_method,
         }
     }
 }
@@ -65,29 +63,45 @@ pub struct WkdFetchUriResult {
 
 async fn fetch_uri<T>(
     uri: &(impl Uri<T> + std::fmt::Debug + std::string::ToString),
-) -> Result<WkdFetchUriResult, WkdFetchError> {
-    let url = match Url::parse(&uri.to_string()) {
-        Ok(url) => url,
-        Err(err) => {
-            return Err(WkdFetchError::WkdUriNotValidUrl(err));
-        }
-    };
-
-    let response = match reqwest::get(url).await {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(WkdFetchError::FailedToFetchUrl(err));
-        }
-    };
-
+) -> WkdFetchUriResult {
     let mut result = WkdFetchUriResult {
         errors: Vec::new(),
         data: None,
     };
 
+    let url = match Url::parse(&uri.to_string()) {
+        Ok(url) => url,
+        Err(err) => {
+            result.errors.push(WkdFetchError::WkdUriNotValidUrl(err));
+            return result;
+        }
+    };
+
+    let client = reqwest::Client::new();
+
+    match client.head(url.clone()).send().await {
+        Ok(response) => {
+            if response.status().as_u16() != 200 {
+                result.errors.push(WkdFetchError::FailedHeadMethod);
+            }
+        }
+        Err(_err) => {
+            result.errors.push(WkdFetchError::FailedHeadMethod);
+        }
+    };
+
+    let response = match client.get(url).send().await {
+        Ok(response) => response,
+        Err(err) => {
+            result.errors.push(WkdFetchError::FailedToFetchUrl(err));
+            return result;
+        }
+    };
+
     let status = response.status().as_u16();
     if status != 200 {
-        return Err(WkdFetchError::StatusNot200(status));
+        result.errors.push(WkdFetchError::StatusNot200(status));
+        return result;
     }
 
     if let Some(header_value) = response.headers().get("content-type") {
@@ -112,7 +126,7 @@ async fn fetch_uri<T>(
         }
     };
     result.data = data;
-    Ok(result)
+    result
 }
 
 #[cfg(test)]
@@ -153,7 +167,7 @@ mod tests {
     async fn fetch_uri_success() {
         let (mut mock_server, test_uri, test_path) = TestUri::create_test_uri_mock().await;
 
-        let mock = mock_server
+        let mock_get = mock_server
             .mock("GET", test_path.as_str())
             .with_status(200)
             .with_header("content-type", "application/octet-stream")
@@ -161,29 +175,42 @@ mod tests {
             .with_body([])
             .create();
 
+        let mock_head = mock_server
+            .mock("HEAD", test_path.as_str())
+            .with_status(200)
+            .with_header("content-type", "application/octet-stream")
+            .with_header("access-control-allow-origin", "*")
+            .create();
+
         let result = fetch_uri(&test_uri).await;
-        assert!(result.is_ok());
-        let result = result.unwrap();
         assert_eq!(result.errors.len(), 0);
         assert!(result.data.is_some());
 
-        mock.assert();
+        mock_get.assert();
+        mock_head.assert();
     }
 
     #[tokio::test]
     async fn fetch_uri_invalid_url() {
         let result = fetch_uri(&TestUri("not_a_url".to_string())).await;
-        assert!(result.is_err());
-        let result = result.unwrap_err();
-        assert!(matches!(result, WkdFetchError::WkdUriNotValidUrl(_)));
+        eprintln!("{:?}", result);
+        assert_eq!(result.errors.len(), 1);
+        assert!(matches!(
+            result.errors[0],
+            WkdFetchError::WkdUriNotValidUrl(_)
+        ));
     }
 
     #[tokio::test]
     async fn fetch_uri_fetch_error() {
         let result = fetch_uri(&TestUri("http://doesnotexist".to_string())).await;
-        assert!(result.is_err());
-        let result = result.unwrap_err();
-        assert!(matches!(result, WkdFetchError::FailedToFetchUrl(_)));
+        eprintln!("{:?}", result);
+        assert_eq!(result.errors.len(), 2);
+        assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
+        assert!(matches!(
+            result.errors[1],
+            WkdFetchError::FailedToFetchUrl(_)
+        ));
     }
 
     #[tokio::test]
@@ -196,11 +223,10 @@ mod tests {
             .create();
 
         let result = fetch_uri(&test_uri).await;
-        assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            WkdFetchError::StatusNot200(404)
-        ));
+        eprintln!("{:?}", result);
+        assert_eq!(result.errors.len(), 2);
+        assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
+        assert!(matches!(result.errors[1], WkdFetchError::StatusNot200(404)));
         mock.assert();
     }
 
@@ -213,9 +239,12 @@ mod tests {
             test_path
         ));
         let result = fetch_uri(&test_uri).await;
-        assert!(result.is_err());
+        eprintln!("{:?}", result);
+
+        assert_eq!(result.errors.len(), 2);
+        assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
         assert!(matches!(
-            result.unwrap_err(),
+            result.errors[1],
             WkdFetchError::FailedToFetchUrl(_)
         ));
     }
@@ -232,15 +261,16 @@ mod tests {
             .create();
 
         let result = fetch_uri(&test_uri).await;
-        assert!(result.is_ok());
-        let result = result.unwrap();
-        assert_eq!(result.errors.len(), 2);
+        eprintln!("{:?}", result);
+
+        assert_eq!(result.errors.len(), 3);
+        assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
         assert!(matches!(
-            result.errors[0],
+            result.errors[1],
             WkdFetchError::ContentTypeNotOctetStream
         ));
         assert!(matches!(
-            result.errors[1],
+            result.errors[2],
             WkdFetchError::AccessControlAllowOriginNotStar
         ));
         assert!(result.data.is_some());

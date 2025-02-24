@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(wkd_result.advanced_method.uri, "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe");
         assert!(wkd_result.direct_method.key.is_none());
         assert!(wkd_result.advanced_method.key.is_none());
-        assert_eq!(wkd_result.direct_method.errors.len(), 1);
-        assert_eq!(wkd_result.advanced_method.errors.len(), 1);
+        assert_eq!(wkd_result.direct_method.errors.len(), 2);
+        assert_eq!(wkd_result.advanced_method.errors.len(), 2);
     }
 }
