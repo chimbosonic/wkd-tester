@@ -42,7 +42,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
         }
     };
 
-    let wkd_fetch = wkd_fetch::WkdFetch::fetch(&wkd_uri).await;
+    let wkd_fetch = wkd::fetch::WkdFetch::fetch(&wkd_uri).await;
 
     WkdResult {
         user_id: user_id.to_string(),
@@ -52,7 +52,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
 }
 
 impl WkdUriResult {
-    pub fn from(wkd_fetch: wkd_fetch::WkdFetchUriResult, uri: impl std::string::ToString) -> Self {
+    pub fn from(wkd_fetch: wkd::fetch::WkdFetchUriResult, uri: impl std::string::ToString) -> Self {
         let key = match wkd_fetch.data {
             Some(data) => match wkd_load::load_key(data) {
                 Ok(key) => Some(WkdKey::from(key)),
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_wkd_error_from() {
-        let error = wkd_fetch::WkdFetchError::AccessControlAllowOriginNotStar;
+        let error = wkd::fetch::WkdFetchError::AccessControlAllowOriginNotStar;
         let wkd_error = WkdError::from(error);
         assert_eq!(wkd_error.name, "AccessControlAllowOriginNotStar");
         assert_eq!(
@@ -112,8 +112,8 @@ mod tests {
 
     #[test]
     fn test_wkd_uri_result_from() {
-        let wkd_fetch = wkd_fetch::WkdFetchUriResult {
-            errors: vec![wkd_fetch::WkdFetchError::AccessControlAllowOriginNotStar],
+        let wkd_fetch = wkd::fetch::WkdFetchUriResult {
+            errors: vec![wkd::fetch::WkdFetchError::AccessControlAllowOriginNotStar],
             data: None,
         };
         let wkd_uri_result = WkdUriResult::from(wkd_fetch, "uri");

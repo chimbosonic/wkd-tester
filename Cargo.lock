@@ -3174,9 +3174,14 @@ dependencies = [
 name = "wkd"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "miette",
+ "mockito",
+ "reqwest",
  "sha1",
  "thiserror 2.0.11",
+ "tokio",
+ "url",
  "z32",
 ]
 
@@ -3189,7 +3194,6 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "wkd",
- "wkd_fetch",
  "wkd_load",
 ]
 
@@ -3207,7 +3211,6 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "wkd",
- "wkd_fetch",
  "wkd_load",
 ]
 

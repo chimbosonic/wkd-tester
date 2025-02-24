@@ -1,9 +1,8 @@
 use clap::Parser;
 use miette::Report;
 use miette::Result;
+use wkd::fetch::{WkdFetch, WkdFetchUriResult};
 use wkd::uri::WkdUri;
-use wkd_fetch::WkdFetch;
-use wkd_fetch::WkdFetchUriResult;
 use wkd_load::load_key;
 
 #[derive(Parser, Debug)]
