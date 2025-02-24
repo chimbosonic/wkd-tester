@@ -2,8 +2,8 @@ use std::time::SystemTime;
 
 use bytes::Bytes;
 use miette::Diagnostic;
+use openpgp::{parse::Parse, policy::StandardPolicy, Cert};
 use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
-use openpgp::{parse::Parse, Cert, policy::StandardPolicy};
 
 use thiserror::Error;
 
@@ -20,7 +20,6 @@ pub struct WkdKey {
     pub revocation_status: String,
 }
 
-
 /// Load a key from a byte array and return Ok(()) if successful
 pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     let cert = match Cert::from_bytes(&data) {
@@ -30,15 +29,16 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         }
     };
 
-    let revocation_status = match cert.revocation_status(&StandardPolicy::new(), Some(SystemTime::now())) {
-        RevocationStatus::Revoked(_) => "Revoked".to_string(),
-        RevocationStatus::NotAsFarAsWeKnow => "Not as far as we know".to_string(),
-        RevocationStatus::CouldBe(_) => "Revoked by third-party".to_string(),
-    };
+    let revocation_status =
+        match cert.revocation_status(&StandardPolicy::new(), Some(SystemTime::now())) {
+            RevocationStatus::Revoked(_) => "Revoked".to_string(),
+            RevocationStatus::NotAsFarAsWeKnow => "Not as far as we know".to_string(),
+            RevocationStatus::CouldBe(_) => "Revoked by third-party".to_string(),
+        };
 
     Ok(WkdKey {
         fingerprint: cert.fingerprint().to_string(),
-        revocation_status
+        revocation_status,
     })
 }
 
