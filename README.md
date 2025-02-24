@@ -98,4 +98,12 @@ wkd_fetch
 
 ## Server: Usage
 
-TO-DO
+Clone the repo and then build the server container:
+```bash
+docker build -t wkd-tester .
+```
+
+Then run it with:
+```bash
+docker run -it --rm -p 7070:7070 wkd-tester
+```
