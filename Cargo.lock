@@ -3215,41 +3215,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wkd_fetch"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "miette",
- "mockito",
- "reqwest",
- "thiserror 2.0.11",
- "tokio",
- "url",
- "wkd",
-]
-
-[[package]]
-name = "wkd_load"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "miette",
- "sequoia-openpgp",
- "thiserror 2.0.11",
-]
-
-[[package]]
-name = "wkd_uri"
-version = "0.1.0"
-dependencies = [
- "miette",
- "sha1",
- "thiserror 2.0.11",
- "z32",
-]
-
-[[package]]
 name = "write16"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
