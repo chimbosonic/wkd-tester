@@ -15,6 +15,5 @@ path = "src/main.rs"
 clap = { version = "4.5.29", features = ["derive"] }
 miette = { version = "7.5.0", features = ["fancy"] }
 wkd = { path = "../wkd" }
-wkd_load = { path = "../wkd_load" }
 tokio = { version = "1.43.0", features = ["full"] }
 thiserror = "2.0.11"

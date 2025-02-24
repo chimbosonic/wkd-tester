@@ -3,7 +3,7 @@ use miette::Report;
 use miette::Result;
 use wkd::fetch::{WkdFetch, WkdFetchUriResult};
 use wkd::uri::WkdUri;
-use wkd_load::load_key;
+use wkd::load::load_key;
 
 #[derive(Parser, Debug)]
 #[command(version, author, about, long_about = None)]

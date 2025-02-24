@@ -54,7 +54,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
 impl WkdUriResult {
     pub fn from(wkd_fetch: wkd::fetch::WkdFetchUriResult, uri: impl std::string::ToString) -> Self {
         let key = match wkd_fetch.data {
-            Some(data) => match wkd_load::load_key(data) {
+            Some(data) => match wkd::load::load_key(data) {
                 Ok(key) => Some(WkdKey::from(key)),
                 Err(_) => None,
             },
@@ -79,7 +79,7 @@ impl WkdError {
 }
 
 impl WkdKey {
-    pub fn from(wkd_key: wkd_load::WkdKey) -> Self {
+    pub fn from(wkd_key: wkd::load::WkdKey) -> Self {
         WkdKey {
             fingerprint: wkd_key.fingerprint,
         }
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_wkd_key_from() {
-        let wkd_key = wkd_load::WkdKey {
+        let wkd_key = wkd::load::WkdKey {
             fingerprint: "fingerprint".to_string(),
         };
         let key = WkdKey::from(wkd_key);
