@@ -173,6 +173,11 @@
                         <td>{{this.advanced_method.key.fingerprint}}</td>
                     </tr>
                     <tr>
+                        <td>Key Revocation Status:</td>
+                        <td>{{this.direct_method.key.revocation_status}}</td>
+                        <td>{{this.advanced_method.key.revocation_status}}</td>
+                    </tr>
+                    <tr>
                         <td>Errors:</td>
                         <td>
                             {{#each this.direct_method.errors}}
@@ -231,14 +236,16 @@
   "direct_method": {
     "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
     "key": {
-      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6"
+      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
+      "revocation_status": "Not as far as we know"
     },
     "errors": []
   },
   "advanced_method": {
     "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
     "key": {
-      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6"
+      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
+      "revocation_status": "Not as far as we know"
     },
     "errors": []
   }

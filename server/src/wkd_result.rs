@@ -20,6 +20,7 @@ pub struct WkdError {
 #[derive(Serialize, Deserialize)]
 pub struct WkdKey {
     fingerprint: String,
+    revocation_status: String,
 }
 
 pub async fn get_wkd(user_id: &str) -> WkdResult {
@@ -82,6 +83,7 @@ impl WkdKey {
     pub fn from(wkd_key: wkd::load::WkdKey) -> Self {
         WkdKey {
             fingerprint: wkd_key.fingerprint,
+            revocation_status: wkd_key.revocation_status,
         }
     }
 }
@@ -94,9 +96,11 @@ mod tests {
     fn test_wkd_key_from() {
         let wkd_key = wkd::load::WkdKey {
             fingerprint: "fingerprint".to_string(),
+            revocation_status: "revocation_status".to_string(),
         };
         let key = WkdKey::from(wkd_key);
         assert_eq!(key.fingerprint, "fingerprint");
+        assert_eq!(key.revocation_status, "revocation_status");
     }
 
     #[test]

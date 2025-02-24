@@ -46,6 +46,10 @@ fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
                         "{method} method key loading succeed with fingerprint: {}",
                         key.fingerprint
                     );
+                    println!(
+                        "{method} method key loading succeed with revocation status: {}",
+                        key.revocation_status
+                    );
                 }
                 Err(error) => {
                     println!("{method} method key loading failed with error:");
