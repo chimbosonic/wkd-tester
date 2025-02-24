@@ -23,7 +23,7 @@ pub struct WkdKey {
 }
 
 pub async fn get_wkd(user_id: &str) -> WkdResult {
-    let wkd_uri = match wkd_uri::WkdUri::new(user_id) {
+    let wkd_uri = match wkd::uri::WkdUri::new(user_id) {
         Ok(wkd_uri) => wkd_uri,
         Err(err) => {
             return WkdResult {

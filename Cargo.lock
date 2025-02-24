@@ -3171,6 +3171,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wkd"
+version = "0.1.0"
+dependencies = [
+ "miette",
+ "sha1",
+ "thiserror 2.0.11",
+ "z32",
+]
+
+[[package]]
 name = "wkd-tester-cli"
 version = "0.1.0"
 dependencies = [
@@ -3178,9 +3188,9 @@ dependencies = [
  "miette",
  "thiserror 2.0.11",
  "tokio",
+ "wkd",
  "wkd_fetch",
  "wkd_load",
- "wkd_uri",
 ]
 
 [[package]]
@@ -3196,9 +3206,9 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.11",
  "tokio",
+ "wkd",
  "wkd_fetch",
  "wkd_load",
- "wkd_uri",
 ]
 
 [[package]]
@@ -3212,7 +3222,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "url",
- "wkd_uri",
+ "wkd",
 ]
 
 [[package]]

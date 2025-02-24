@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use reqwest::Url;
-use wkd_uri::{Uri, WkdUri};
+use wkd::uri::{Uri, WkdUri};
 
 use miette::Diagnostic;
 use thiserror::Error;
