@@ -89,6 +89,34 @@
         .api-section code {
             font-size: 14px;
         }
+
+        input[type="email"],
+        input[type="submit"] {
+            height: 30px;
+            /* Set a fixed height for both */
+            font-size: 16px;
+            border-radius: 4px;
+            padding: 0 10px;
+        }
+
+        input[type="email"] {
+            border: 1px solid #ccc;
+        }
+
+        input[type="submit"] {
+            background-color: #009879;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            /* Adjust padding if needed so the text looks centered */
+            padding: 0 12px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #007b63;
+        }
     </style>
 </head>
 
