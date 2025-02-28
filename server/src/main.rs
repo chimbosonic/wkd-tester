@@ -1,6 +1,6 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::http::header::CACHE_CONTROL;
-use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::http::header::{HeaderValue, CACHE_CONTROL};
+use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder, Result};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
 mod render;
@@ -8,21 +8,20 @@ mod wkd_result;
 
 use render::render;
 use serde::Deserialize;
-use serde_json::json;
 
 #[get("/api/{user_id}")]
-async fn api(user_id: web::Path<String>) -> impl Responder {
+async fn api(user_id: web::Path<String>) -> Result<impl Responder> {
     let wkd_result = wkd_result::get_wkd(&user_id).await;
-
-    serde_json::to_string_pretty(&wkd_result).unwrap()
+    Ok(web::Json(wkd_result))
 }
 
 #[get("/")]
 async fn index_get(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
-    let mut response = render(hb, "index", &json!({}));
-    response
-        .headers_mut()
-        .insert(CACHE_CONTROL, "public, max-age=604800".parse().unwrap());
+    let mut response = render(hb, "index", &None);
+    response.headers_mut().insert(
+        CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age=604800"),
+    );
     response
 }
 
@@ -35,7 +34,7 @@ struct FormData {
 async fn lookup(form: web::Form<FormData>, hb: web::Data<Handlebars<'_>>) -> HttpResponse {
     let user_id = form.email.clone();
     let wkd_result = wkd_result::get_wkd(&user_id).await;
-    render(hb, "index", &json!(vec![wkd_result]))
+    render(hb, "index", &Some(wkd_result))
 }
 
 #[actix_web::main]
@@ -60,8 +59,9 @@ async fn main() -> std::io::Result<()> {
             .service(index_get)
             .service(lookup)
             .service(api)
-            .wrap(Logger::default())
+            .wrap(middleware::Logger::default())
             .wrap(Governor::new(&governor_conf))
+            .wrap(middleware::Compress::default())
     })
     .bind((host, port))?
     .run()

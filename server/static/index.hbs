@@ -178,7 +178,7 @@
             <input type="submit" value="Lookup">
         </form>
 
-        {{#each this}}
+        {{#if this}}
         <h3>Results for {{this.user_id}}</h3>
         <div class="result-table">
             <table>
@@ -208,7 +208,7 @@
                     <tr>
                         <td>Errors:</td>
                         <td>
-                            {{#each this.direct_method.errors}}
+                            {{#if this.direct_method.errors}}
                             <table>
                                 <thead>
                                     <tr>
@@ -216,17 +216,19 @@
                                         <th>Error Message</th>
                                     </tr>
                                 </thead>
+                                {{#each this.direct_method.errors}}
                                 <tbody>
                                     <tr>
                                         <td>{{this.name}}</td>
                                         <td>{{this.message}}</td>
                                     </tr>
                                 </tbody>
+                                {{/each}}
                             </table>
-                            {{/each}}
+                            {{/if}}
                         </td>
                         <td>
-                            {{#each this.advanced_method.errors}}
+                            {{#if this.direct_method.errors}}
                             <table>
                                 <thead>
                                     <tr>
@@ -234,20 +236,22 @@
                                         <th>Error Message</th>
                                     </tr>
                                 </thead>
+                                {{#each this.advanced_method.errors}}
                                 <tbody>
                                     <tr>
                                         <td>{{this.name}}</td>
                                         <td>{{this.message}}</td>
                                     </tr>
                                 </tbody>
+                                {{/each}}
                             </table>
-                            {{/each}}
+                            {{/if}}
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        {{/each}}
+        {{/if}}
     </div>
     <div class="api-section">
         <h2>API Usage</h2>
