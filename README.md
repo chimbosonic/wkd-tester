@@ -7,7 +7,7 @@ WKD tester is available in two variants:
 
 Both use the same library for testing and debugging [OpenPGP Web Key Directory (WKD)](https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/).
 
-You can find `wkd-tester-server` hosted by `Alexis Lowe <alexis.lowe@chimbosonic.com>` at https://wkd.chimbosonic.com
+You can find `wkd-tester-server` hosted by `Alexis Lowe <alexis.lowe@chimbosonic.com>` at https://wkd.dp42.dev
 
 ## CLI: Install
 
