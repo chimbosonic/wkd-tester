@@ -178,8 +178,8 @@
             <input type="submit" value="Lookup">
         </form>
 
-        {{#if this}}
-        <h3>Results for {{this.user_id}}</h3>
+        {{#if this.data}}
+        <h3>Results for {{this.data.user_id}}</h3>
         <div class="result-table">
             <table>
                 <thead>
@@ -192,23 +192,23 @@
                 <tbody>
                     <tr>
                         <td>URI:</td>
-                        <td><a href="{{this.direct_method.uri}}">{{this.direct_method.uri}}</a></td>
-                        <td><a href="{{this.advanced_method.uri}}">{{this.advanced_method.uri}}</a></td>
+                        <td><a href="{{this.data.direct_method.uri}}">{{this.data.direct_method.uri}}</a></td>
+                        <td><a href="{{this.data.advanced_method.uri}}">{{this.data.advanced_method.uri}}</a></td>
                     </tr>
                     <tr>
                         <td>Key Fingerprint:</td>
-                        <td>{{this.direct_method.key.fingerprint}}</td>
-                        <td>{{this.advanced_method.key.fingerprint}}</td>
+                        <td>{{this.data.direct_method.key.fingerprint}}</td>
+                        <td>{{this.data.advanced_method.key.fingerprint}}</td>
                     </tr>
                     <tr>
                         <td>Key Revocation Status:</td>
-                        <td>{{this.direct_method.key.revocation_status}}</td>
-                        <td>{{this.advanced_method.key.revocation_status}}</td>
+                        <td>{{this.data.direct_method.key.revocation_status}}</td>
+                        <td>{{this.data.advanced_method.key.revocation_status}}</td>
                     </tr>
                     <tr>
                         <td>Errors:</td>
                         <td>
-                            {{#if this.direct_method.errors}}
+                            {{#if this.data.direct_method.errors}}
                             <table>
                                 <thead>
                                     <tr>
@@ -216,11 +216,11 @@
                                         <th>Error Message</th>
                                     </tr>
                                 </thead>
-                                {{#each this.direct_method.errors}}
+                                {{#each this.data.direct_method.errors}}
                                 <tbody>
                                     <tr>
-                                        <td>{{this.name}}</td>
-                                        <td>{{this.message}}</td>
+                                        <td>{{this.data.name}}</td>
+                                        <td>{{this.data.message}}</td>
                                     </tr>
                                 </tbody>
                                 {{/each}}
@@ -228,7 +228,7 @@
                             {{/if}}
                         </td>
                         <td>
-                            {{#if this.direct_method.errors}}
+                            {{#if this.data.direct_method.errors}}
                             <table>
                                 <thead>
                                     <tr>
@@ -236,11 +236,11 @@
                                         <th>Error Message</th>
                                     </tr>
                                 </thead>
-                                {{#each this.advanced_method.errors}}
+                                {{#each this.data.advanced_method.errors}}
                                 <tbody>
                                     <tr>
-                                        <td>{{this.name}}</td>
-                                        <td>{{this.message}}</td>
+                                        <td>{{this.data.name}}</td>
+                                        <td>{{this.data.message}}</td>
                                     </tr>
                                 </tbody>
                                 {{/each}}
@@ -286,7 +286,9 @@
 </body>
 
 <footer>
-    <p>Hosted by <a href="https://chimbosonic.com">Alexis Lowe</a> - Source code available on <a
+    <p>Hosted by <a href="{{this.footer.host_url}}">{{this.footer.host_name}}</a> 
+<script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
+<noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript> - Source code available on <a
             href="https://github.com/chimbosonic/wkd-tester">GitHub</a></p>
 </footer>
 

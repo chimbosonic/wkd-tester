@@ -98,7 +98,7 @@ wkd_fetch
 
 ## Server: Usage
 
-Clone the repo and then build the server container:
+Clone the repo, make sure to update `server/src/footer.rs` and then build the server container:
 ```bash
 docker build -t wkd-tester .
 ```

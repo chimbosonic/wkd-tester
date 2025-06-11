@@ -3,6 +3,7 @@ use actix_web::http::header::{HeaderValue, CACHE_CONTROL};
 use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder, Result};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
+mod footer;
 mod render;
 mod wkd_result;
 
