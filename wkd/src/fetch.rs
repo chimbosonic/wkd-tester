@@ -36,6 +36,10 @@ pub enum WkdFetchError {
     #[error("Failed existence cheack with HEAD Method")]
     #[diagnostic(code(wkd_fetch))]
     FailedHeadMethod,
+
+    #[error("Well-Known Path shouldn't have a index")]
+    #[diagnostic(severity(Warning), code(wkd_fetch))]
+    WkdPathShouldNotHaveIndex,
 }
 
 pub struct WkdFetch {
@@ -59,6 +63,14 @@ impl WkdFetch {
 pub struct WkdFetchUriResult {
     pub errors: Vec<WkdFetchError>,
     pub data: Option<Bytes>,
+}
+
+fn trim_uri(url: &str) -> &str {
+    if let Some(pos) = url.rfind('/') {
+        &url[..=pos]
+    } else {
+        url
+    }
 }
 
 async fn fetch_uri<T>(
@@ -87,6 +99,13 @@ async fn fetch_uri<T>(
         }
         Err(_err) => {
             result.errors.push(WkdFetchError::FailedHeadMethod);
+        }
+    };
+
+    let index_url = trim_uri(url.as_str());
+    if let Ok(response) = client.get(index_url).send().await {
+        if response.status().as_u16() == 200 {
+            result.errors.push(WkdFetchError::WkdPathShouldNotHaveIndex);
         }
     };
 
@@ -260,21 +279,34 @@ mod tests {
             .with_header("access-control-allow-origin", "example.org")
             .create();
 
+        let mock_index = mock_server
+            .mock("GET", trim_uri(test_path.as_str()))
+            .with_status(200)
+            .with_header("content-type", "text/plain")
+            .with_header("access-control-allow-origin", "example.org")
+            .create();
+
         let result = fetch_uri(&test_uri).await;
         eprintln!("{:?}", result);
 
-        assert_eq!(result.errors.len(), 3);
+        assert_eq!(result.errors.len(), 4);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
+
         assert!(matches!(
             result.errors[1],
-            WkdFetchError::ContentTypeNotOctetStream
+            WkdFetchError::WkdPathShouldNotHaveIndex
         ));
         assert!(matches!(
             result.errors[2],
+            WkdFetchError::ContentTypeNotOctetStream
+        ));
+        assert!(matches!(
+            result.errors[3],
             WkdFetchError::AccessControlAllowOriginNotStar
         ));
         assert!(result.data.is_some());
 
         mock.assert();
+        mock_index.assert();
     }
 }
