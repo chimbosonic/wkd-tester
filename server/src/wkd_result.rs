@@ -54,11 +54,8 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
 
 impl WkdUriResult {
     pub fn from(wkd_fetch: wkd::fetch::WkdFetchUriResult, uri: impl std::string::ToString) -> Self {
-        let key = match wkd_fetch.data {
-            Some(data) => match wkd::load::load_key(data) {
-                Ok(key) => Some(WkdKey::from(key)),
-                Err(_) => None,
-            },
+        let key: Option<WkdKey> = match wkd_fetch.data {
+            Some(data) => wkd::load::load_key(data).ok().map(WkdKey::from),
             None => None,
         };
 
@@ -73,8 +70,8 @@ impl WkdUriResult {
 impl WkdError {
     pub fn from<Error: std::error::Error>(error: Error) -> Self {
         WkdError {
-            name: format!("{:?}", error),
-            message: format!("{}", error),
+            name: format!("{error:?}"),
+            message: format!("{error}"),
         }
     }
 }
@@ -137,8 +134,14 @@ mod tests {
     async fn test_get_wkd() {
         let wkd_result = get_wkd("Joe.Doe@example.org").await;
         assert_eq!(wkd_result.user_id, "Joe.Doe@example.org");
-        assert_eq!(wkd_result.direct_method.uri, "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe");
-        assert_eq!(wkd_result.advanced_method.uri, "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe");
+        assert_eq!(
+            wkd_result.direct_method.uri,
+            "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
+        );
+        assert_eq!(
+            wkd_result.advanced_method.uri,
+            "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
+        );
         assert!(wkd_result.direct_method.key.is_none());
         assert!(wkd_result.advanced_method.key.is_none());
         assert_eq!(wkd_result.direct_method.errors.len(), 3);

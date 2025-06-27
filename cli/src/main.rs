@@ -32,35 +32,37 @@ async fn main() -> Result<()> {
 }
 
 fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
-    if let Some(data) = wkd_fetch.data {
-        if !wkd_fetch.errors.is_empty() {
-            println!("{method} method fetch was successful with warnings:");
-            for error in wkd_fetch.errors {
-                println!("{:?}", Report::new(error));
-            }
-        } else {
-            println!("{method} method fetch was successful");
-            match load_key(data) {
-                Ok(key) => {
-                    println!(
-                        "{method} method key loading succeed with fingerprint: {}",
-                        key.fingerprint
-                    );
-                    println!(
-                        "{method} method key loading succeed with revocation status: {}",
-                        key.revocation_status
-                    );
-                }
-                Err(error) => {
-                    println!("{method} method key loading failed with error:");
-                    println!("{:?}", Report::new(error));
-                }
-            };
-        }
-    } else {
-        println!("{method} method fetch failed with error:");
+    if wkd_fetch.data.is_none() {
+        println!("{method} method fetch failed with following errors:");
         for error in wkd_fetch.errors {
             println!("{:?}", Report::new(error));
         }
+        return;
+    }
+
+    if !wkd_fetch.errors.is_empty() {
+        println!("{method} method fetch was successful with warnings:");
+        for error in wkd_fetch.errors {
+            println!("{:?}", Report::new(error));
+        }
+    }
+
+    if let Some(data) = wkd_fetch.data {
+        match load_key(data) {
+            Ok(key) => {
+                println!(
+                    "{method} method key loading succeed with fingerprint: {}",
+                    key.fingerprint
+                );
+                println!(
+                    "{method} method key loading succeed with revocation status: {}",
+                    key.revocation_status
+                );
+            }
+            Err(error) => {
+                println!("{method} method key loading failed with following errors:");
+                println!("{:?}", Report::new(error));
+            }
+        };
     }
 }

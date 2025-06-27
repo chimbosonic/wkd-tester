@@ -15,7 +15,9 @@ pub enum WkdFetchError {
     #[diagnostic(code(wkd_fetch))]
     FailedToFetchUrl(#[from] reqwest::Error),
 
-    #[error("Content-Type header is not set to 'application/octet-stream'. This may cause issues with parsing")]
+    #[error(
+        "Content-Type header is not set to 'application/octet-stream'. This may cause issues with parsing"
+    )]
     #[diagnostic(severity(Warning), code(wkd_fetch))]
     ContentTypeNotOctetStream,
 
@@ -87,10 +89,10 @@ fn get_policy_url(url: &str) -> Option<String> {
 }
 
 async fn check_head_method(client: &reqwest::Client, url: &str) -> Result<(), WkdFetchError> {
-    if let Ok(response) = client.head(url).send().await {
-        if response.status().as_u16() == 200 {
-            return Ok(());
-        }
+    if let Ok(response) = client.head(url).send().await
+        && response.status().as_u16() == 200
+    {
+        return Ok(());
     }
 
     Err(WkdFetchError::FailedHeadMethod)
@@ -98,10 +100,10 @@ async fn check_head_method(client: &reqwest::Client, url: &str) -> Result<(), Wk
 
 async fn check_for_indexing(client: &reqwest::Client, url: &str) -> Result<(), WkdFetchError> {
     let index_url = trim_uri(url);
-    if let Ok(response) = client.get(index_url).send().await {
-        if response.status().as_u16() == 200 {
-            return Err(WkdFetchError::WkdPathShouldNotHaveIndex);
-        }
+    if let Ok(response) = client.get(index_url).send().await
+        && response.status().as_u16() == 200
+    {
+        return Err(WkdFetchError::WkdPathShouldNotHaveIndex);
     }
 
     Ok(())
@@ -113,10 +115,10 @@ async fn check_policy_file(client: &reqwest::Client, url: &str) -> Result<(), Wk
         None => return Err(WkdFetchError::WkdPolicyFilePathGenerationFailed),
     };
 
-    if let Ok(response) = client.get(&policy_url).send().await {
-        if response.status().as_u16() == 200 {
-            return Ok(());
-        }
+    if let Ok(response) = client.get(&policy_url).send().await
+        && response.status().as_u16() == 200
+    {
+        return Ok(());
     }
 
     Err(WkdFetchError::WkdPolicyFileNotFound)
@@ -166,18 +168,18 @@ async fn fetch_uri<T>(
         return result;
     }
 
-    if let Some(header_value) = response.headers().get("content-type") {
-        if header_value != "application/octet-stream" {
-            result.errors.push(WkdFetchError::ContentTypeNotOctetStream);
-        }
+    if let Some(header_value) = response.headers().get("content-type")
+        && header_value != "application/octet-stream"
+    {
+        result.errors.push(WkdFetchError::ContentTypeNotOctetStream);
     }
 
-    if let Some(header_value) = response.headers().get("access-control-allow-origin") {
-        if header_value != "*" {
-            result
-                .errors
-                .push(WkdFetchError::AccessControlAllowOriginNotStar);
-        }
+    if let Some(header_value) = response.headers().get("access-control-allow-origin")
+        && header_value != "*"
+    {
+        result
+            .errors
+            .push(WkdFetchError::AccessControlAllowOriginNotStar);
     }
 
     let data = match response.bytes().await {
@@ -218,7 +220,7 @@ mod tests {
             let test_policy_path = "/.well-known/openpgpkey/policy".to_string();
             let test_uri = TestUri(test_uri);
 
-            return (mock_server, test_uri, test_path, test_policy_path);
+            (mock_server, test_uri, test_path, test_policy_path)
         }
     }
 
@@ -237,7 +239,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_policy_url() {
-        let plain_url =  "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe";
+        let plain_url = "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe";
         let domain_url = "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe";
 
         let policy_url = get_policy_url(plain_url);
@@ -258,7 +260,6 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_uri_success() {
-        let _ = env_logger::try_init();
         let (mut mock_server, test_uri, test_path, test_policy_path) =
             TestUri::create_test_uri_mock().await;
         mock_server
@@ -291,7 +292,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_uri_invalid_url() {
         let result = fetch_uri(&TestUri("not_a_url".to_string())).await;
-        eprintln!("{:?}", result);
+        eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 1);
         assert!(matches!(
             result.errors[0],
@@ -302,7 +303,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_uri_fetch_error() {
         let result = fetch_uri(&TestUri("http://doesnotexist".to_string())).await;
-        eprintln!("{:?}", result);
+        eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 3);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
         assert!(matches!(
@@ -326,7 +327,7 @@ mod tests {
             .create();
 
         let result = fetch_uri(&test_uri).await;
-        eprintln!("{:?}", result);
+        eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 3);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
         assert!(matches!(
@@ -347,7 +348,7 @@ mod tests {
             test_path
         ));
         let result = fetch_uri(&test_uri).await;
-        eprintln!("{:?}", result);
+        eprintln!("{result:?}");
 
         assert_eq!(result.errors.len(), 3);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
@@ -388,7 +389,7 @@ mod tests {
             .create();
 
         let result = fetch_uri(&test_uri).await;
-        eprintln!("{:?}", result);
+        eprintln!("{result:?}");
 
         assert_eq!(result.errors.len(), 5);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));

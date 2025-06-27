@@ -1,11 +1,11 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use handlebars::Handlebars;
 use log::error;
 use serde::Serialize;
 
 use crate::wkd_result::WkdResult;
 
-use crate::footer::{FooterData, FOOTER_DATA};
+use crate::footer::{FOOTER_DATA, FooterData};
 
 #[derive(Serialize)]
 struct RenderData<'a, T> {
@@ -26,7 +26,7 @@ pub fn render(
     match hb.render(page_path, &render_data) {
         Ok(body) => HttpResponse::Ok().body(body),
         Err(err) => {
-            error!("Template rendering error: {}", err);
+            error!("Template rendering error: {err}");
             HttpResponse::InternalServerError().finish()
         }
     }

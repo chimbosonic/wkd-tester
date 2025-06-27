@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use bytes::Bytes;
 use miette::Diagnostic;
-use openpgp::{parse::Parse, policy::StandardPolicy, Cert};
+use openpgp::{Cert, parse::Parse, policy::StandardPolicy};
 use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
 
 use thiserror::Error;

@@ -21,7 +21,12 @@ use thiserror::Error;
 pub enum WkdUriError {
     #[cfg(test)]
     #[error("User hash must be 32 characters long")]
-    #[diagnostic(code(wkd_uri::user_hash::from_string), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3"))]
+    #[diagnostic(
+        code(wkd_uri::user_hash::from_string),
+        url(
+            "https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-3"
+        )
+    )]
     HashLengthError,
 
     #[cfg(test)]
@@ -33,7 +38,12 @@ pub enum WkdUriError {
     HashZ32EncodingError,
 
     #[error("User ID must be in the format '{{local_part}}@{{domain_part}}'")]
-    #[diagnostic(code(wkd_uri::parse_email), url("https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-2"))]
+    #[diagnostic(
+        code(wkd_uri::parse_email),
+        url(
+            "https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-2"
+        )
+    )]
     InvalidEmailError,
 }
 

@@ -1,6 +1,6 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::http::header::{HeaderValue, CACHE_CONTROL};
-use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder, Result};
+use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
+use actix_web::{App, HttpResponse, HttpServer, Responder, Result, get, middleware, post, web};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
 mod footer;
