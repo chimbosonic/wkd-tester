@@ -1,0 +1,57 @@
+image: rust:latest
+
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  FF_USE_FASTZIP: "true"
+  CACHE_COMPRESSION_LEVEL: "fastest"
+
+lint:
+  stage: lint
+  cache:
+    key:
+      files:
+        - Cargo.lock
+    paths:
+      - target/
+  script:
+    - rustc --version && cargo --version
+    - rustup component add rustfmt
+    - rustup component add clippy
+    - cargo fmt --all -- --check
+    - cargo clippy -- -D warnings
+
+test:
+  stage: test
+  cache:
+    key:
+      files:
+        - Cargo.lock
+    paths:
+      - target/
+  script:
+    - rustc --version && cargo --version
+    - cargo test --all-features
+
+build-oci:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE/wkd-tester-server"
+    IMAGE_TAG_SHA: "$IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
+    IMAGE_TAG_LATEST: "$IMAGE_TAG:latest"
+  before_script:
+    - docker info
+    - echo "Logging into GitLab Container Registry; $CI_REGISTRY $CI_REGISTRY_USER "
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+  script:
+    - docker build -t ${IMAGE_TAG_SHA} .
+    - docker tag ${IMAGE_TAG_SHA} ${IMAGE_TAG_LATEST}
+    - docker push -a ${IMAGE_TAG}
