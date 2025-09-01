@@ -1,24 +1,7 @@
-
-
-#[cfg(feature = "rpgp")]
-use anyhow::Ok;
 use bytes::Bytes;
 use miette::Diagnostic;
-
-#[cfg(feature = "sequoia")]
-use openpgp::{Cert, parse::Parse, policy::StandardPolicy}; 
-#[cfg(feature = "sequoia")]
-use std::time::SystemTime; 
-#[cfg(feature = "sequoia")]
-use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
-
-
-#[cfg(feature = "rpgp")]
-use pgp::composed::{SignedPublicKey, Message, Deserializable};
-
-
-
 use thiserror::Error;
+
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum WkdLoadError {
@@ -35,6 +18,10 @@ pub struct WkdKey {
 
 #[cfg(feature = "sequoia")]
 pub fn load_key_sequoia(data: Bytes) -> Result<WkdKey, WkdLoadError> {
+    use openpgp::{Cert, parse::Parse, policy::StandardPolicy};
+    use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
+    use std::time::SystemTime;
+
     let cert = match Cert::from_bytes(&data) {
         Ok(cert) => cert,
         Err(err) => {
@@ -55,17 +42,34 @@ pub fn load_key_sequoia(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     })
 }
 
-
 #[cfg(feature = "rpgp")]
 pub fn load_key_rpgp(data: Bytes) -> Result<WkdKey, WkdLoadError> {
-    unimplemented!("rpgp support is not yet implemented");
+    use pgp::types::KeyDetails;
+    use pgp::composed::{Deserializable,  SignedPublicKey};
+
+    let pub_key = match SignedPublicKey::from_bytes(std::io::Cursor::new(data)) {
+        Ok(key) => key,
+        Err(err) => {
+            return Err(WkdLoadError::FailedToParseKey(err.into()));
+        }
+    };
+
+    let revocation_status = match pub_key.verify() {
+        Err(reason) => format!("Revoked: {}", reason),
+        Ok(_) => "Not as far as we know".to_string(),
+    };
+
+    let fingerprint = pub_key.fingerprint().to_string().to_ascii_uppercase();
+
+    Ok(WkdKey {
+        fingerprint,
+        revocation_status,
+    })
 }
 
-/// Load a key from a byte array and return Ok(()) if successful
 pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     #[cfg(feature = "rpgp")]
     return load_key_rpgp(data);
-
 
     #[cfg(feature = "sequoia")]
     return load_key_sequoia(data);
@@ -84,6 +88,18 @@ mod tests {
         assert!(cert.is_err());
         let cert = cert.unwrap_err();
         assert!(matches!(cert, WkdLoadError::FailedToParseKey(_)));
+    }
+
+    #[test]
+    fn test_load_expired_key() {
+        let test_file_path = "../test_files/test_expired_key";
+        let key_bytes = fs::read(test_file_path).unwrap();
+        let data = Bytes::from(key_bytes);
+        let cert = load_key(data);
+        assert!(cert.is_ok());
+        let cert = cert.unwrap();
+        assert_eq!(cert.fingerprint, "A03351F7677A6D0B94F224A636CB3789EAC25E50");
+        assert_eq!(cert.revocation_status, "Not as far as we know");
     }
 
     #[test]
