@@ -1,5 +1,7 @@
 use bytes::Bytes;
 use miette::Diagnostic;
+use pgp::composed::{Deserializable, SignedPublicKey};
+use pgp::types::KeyDetails;
 use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug)]
@@ -15,37 +17,7 @@ pub struct WkdKey {
     pub revocation_status: String,
 }
 
-#[cfg(feature = "sequoia")]
-pub fn load_key_sequoia(data: Bytes) -> Result<WkdKey, WkdLoadError> {
-    use openpgp::{Cert, parse::Parse, policy::StandardPolicy};
-    use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
-    use std::time::SystemTime;
-
-    let cert = match Cert::from_bytes(&data) {
-        Ok(cert) => cert,
-        Err(err) => {
-            return Err(WkdLoadError::FailedToParseKey(err));
-        }
-    };
-
-    let revocation_status =
-        match cert.revocation_status(&StandardPolicy::new(), Some(SystemTime::now())) {
-            RevocationStatus::Revoked(_) => "Revoked".to_string(),
-            RevocationStatus::NotAsFarAsWeKnow => "Not as far as we know".to_string(),
-            RevocationStatus::CouldBe(_) => "Revoked by third-party".to_string(),
-        };
-
-    Ok(WkdKey {
-        fingerprint: cert.fingerprint().to_string(),
-        revocation_status,
-    })
-}
-
-#[cfg(feature = "rpgp")]
-pub fn load_key_rpgp(data: Bytes) -> Result<WkdKey, WkdLoadError> {
-    use pgp::composed::{Deserializable, SignedPublicKey};
-    use pgp::types::KeyDetails;
-
+pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     let pub_key = match SignedPublicKey::from_bytes(std::io::Cursor::new(data)) {
         Ok(key) => key,
         Err(err) => {
@@ -64,14 +36,6 @@ pub fn load_key_rpgp(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         fingerprint,
         revocation_status,
     })
-}
-
-pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
-    #[cfg(feature = "rpgp")]
-    return load_key_rpgp(data);
-
-    #[cfg(feature = "sequoia")]
-    return load_key_sequoia(data);
 }
 
 #[cfg(test)]

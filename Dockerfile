@@ -1,6 +1,6 @@
 FROM rust:slim
 
-RUN mkdir -p /build && apt-get update && apt-get install -y libssl-dev pkg-config
+RUN mkdir -p /build
 
 COPY . /build
 
