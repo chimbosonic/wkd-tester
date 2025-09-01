@@ -1,9 +1,22 @@
-use std::time::SystemTime;
 
+
+#[cfg(feature = "rpgp")]
+use anyhow::Ok;
 use bytes::Bytes;
 use miette::Diagnostic;
-use openpgp::{Cert, parse::Parse, policy::StandardPolicy};
+
+#[cfg(feature = "sequoia")]
+use openpgp::{Cert, parse::Parse, policy::StandardPolicy}; 
+#[cfg(feature = "sequoia")]
+use std::time::SystemTime; 
+#[cfg(feature = "sequoia")]
 use sequoia_openpgp::{self as openpgp, types::RevocationStatus};
+
+
+#[cfg(feature = "rpgp")]
+use pgp::composed::{SignedPublicKey, Message, Deserializable};
+
+
 
 use thiserror::Error;
 
@@ -20,8 +33,8 @@ pub struct WkdKey {
     pub revocation_status: String,
 }
 
-/// Load a key from a byte array and return Ok(()) if successful
-pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
+#[cfg(feature = "sequoia")]
+pub fn load_key_sequoia(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     let cert = match Cert::from_bytes(&data) {
         Ok(cert) => cert,
         Err(err) => {
@@ -40,6 +53,22 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         fingerprint: cert.fingerprint().to_string(),
         revocation_status,
     })
+}
+
+
+#[cfg(feature = "rpgp")]
+pub fn load_key_rpgp(data: Bytes) -> Result<WkdKey, WkdLoadError> {
+    unimplemented!("rpgp support is not yet implemented");
+}
+
+/// Load a key from a byte array and return Ok(()) if successful
+pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
+    #[cfg(feature = "rpgp")]
+    return load_key_rpgp(data);
+
+
+    #[cfg(feature = "sequoia")]
+    return load_key_sequoia(data);
 }
 
 #[cfg(test)]
