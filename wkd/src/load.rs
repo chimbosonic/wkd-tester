@@ -2,7 +2,6 @@ use bytes::Bytes;
 use miette::Diagnostic;
 use thiserror::Error;
 
-
 #[derive(Error, Diagnostic, Debug)]
 pub enum WkdLoadError {
     #[error("Failed to parse key")]
@@ -44,8 +43,8 @@ pub fn load_key_sequoia(data: Bytes) -> Result<WkdKey, WkdLoadError> {
 
 #[cfg(feature = "rpgp")]
 pub fn load_key_rpgp(data: Bytes) -> Result<WkdKey, WkdLoadError> {
+    use pgp::composed::{Deserializable, SignedPublicKey};
     use pgp::types::KeyDetails;
-    use pgp::composed::{Deserializable,  SignedPublicKey};
 
     let pub_key = match SignedPublicKey::from_bytes(std::io::Cursor::new(data)) {
         Ok(key) => key,
