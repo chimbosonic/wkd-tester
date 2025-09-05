@@ -205,6 +205,11 @@
                         <td>{{this.data.advanced_method.key.revocation_status}}</td>
                     </tr>
                     <tr>
+                        <td>Key Expiry Status:</td>
+                        <td>{{this.data.direct_method.key.expriry}}</td>
+                        <td>{{this.data.advanced_method.key.expriry}}</td>
+                    </tr>
+                    <tr>
                         <td>Errors:</td>
                         <td>
                             {{#if this.data.direct_method.errors}}
@@ -268,7 +273,8 @@
     "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
     "key": {
       "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-      "revocation_status": "Not as far as we know"
+      "revocation_status": "Not as far as we know",
+      "expriry": "Expires on 2037-11-12 12:15:56 UTC"
     },
     "errors": []
   },
@@ -276,7 +282,8 @@
     "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
     "key": {
       "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-      "revocation_status": "Not as far as we know"
+      "revocation_status": "Not as far as we know",
+      "expriry": "Expires on 2037-11-12 12:15:56 UTC"
     },
     "errors": []
   }

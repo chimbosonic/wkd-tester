@@ -58,6 +58,10 @@ fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
                     "{method} method key loading succeed with revocation status: {}",
                     key.revocation_status
                 );
+                println!(
+                    "{method} method key loading succeed with expiry status: {}",
+                    key.expriry
+                );
             }
             Err(error) => {
                 println!("{method} method key loading failed with following errors:");

@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use chrono;
 use miette::Diagnostic;
 use pgp::composed::{Deserializable, SignedPublicKey};
 use pgp::types::KeyDetails;
@@ -15,6 +16,7 @@ pub enum WkdLoadError {
 pub struct WkdKey {
     pub fingerprint: String,
     pub revocation_status: String,
+    pub expriry: String,
 }
 
 pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
@@ -32,9 +34,21 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
 
     let fingerprint = pub_key.fingerprint().to_string().to_ascii_uppercase();
 
+    let expriry = match pub_key.expires_at() {
+        Some(date) => {
+            if date < chrono::Utc::now() {
+                format!("Expired on {}", date)
+            } else {
+                format!("Expires on {}", date)
+            }
+        }
+        None => "No expiry date set".to_string(),
+    };
+
     Ok(WkdKey {
         fingerprint,
         revocation_status,
+        expriry,
     })
 }
 
@@ -63,6 +77,7 @@ mod tests {
         let cert = cert.unwrap();
         assert_eq!(cert.fingerprint, "A03351F7677A6D0B94F224A636CB3789EAC25E50");
         assert_eq!(cert.revocation_status, "Not as far as we know");
+        assert_eq!(cert.expriry, "Expired on 2021-08-26 15:38:21 UTC");
     }
 
     #[test]
@@ -74,6 +89,6 @@ mod tests {
         assert!(cert.is_ok());
         let cert = cert.unwrap();
         assert_eq!(cert.fingerprint, "AC48BC1F029B6188D97E2D807C855DB4466DF0C6");
-        assert_eq!(cert.revocation_status, "Not as far as we know");
+        assert_eq!(cert.expriry, "Expires on 2037-11-12 12:15:56 UTC");
     }
 }
