@@ -25,7 +25,11 @@ async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
     };
 
     let result = wkd_result::get_wkd(email).await;
-    Ok(web::Json(result))
+    let result = web::Json(result)
+        .customize()
+        .insert_header((CACHE_CONTROL, "no-store"));
+
+    Ok(result)
 }
 
 #[get("/")]
