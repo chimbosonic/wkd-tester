@@ -21,7 +21,7 @@ pub struct WkdError {
 pub struct WkdKey {
     fingerprint: String,
     revocation_status: String,
-    expriry: String,
+    expiry: String,
 }
 
 pub async fn get_wkd(user_id: &str) -> WkdResult {
@@ -82,7 +82,7 @@ impl WkdKey {
         WkdKey {
             fingerprint: wkd_key.fingerprint,
             revocation_status: wkd_key.revocation_status,
-            expriry: wkd_key.expriry,
+            expiry: wkd_key.expiry,
         }
     }
 }
@@ -96,12 +96,12 @@ mod tests {
         let wkd_key = wkd::load::WkdKey {
             fingerprint: "fingerprint".to_string(),
             revocation_status: "revocation_status".to_string(),
-            expriry: "expriry".to_string(),
+            expiry: "expiry".to_string(),
         };
         let key = WkdKey::from(wkd_key);
         assert_eq!(key.fingerprint, "fingerprint");
         assert_eq!(key.revocation_status, "revocation_status");
-        assert_eq!(key.expriry, "expriry");
+        assert_eq!(key.expiry, "expiry");
     }
 
     #[test]

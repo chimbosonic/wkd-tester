@@ -60,7 +60,7 @@ fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
                 );
                 println!(
                     "{method} method key loading succeed with expiry status: {}",
-                    key.expriry
+                    key.expiry
                 );
             }
             Err(error) => {
