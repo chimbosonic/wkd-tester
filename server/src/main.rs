@@ -1,4 +1,5 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::error::ErrorBadRequest;
 use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
 use actix_web::{App, HttpResponse, HttpServer, Responder, Result, get, middleware, web};
 use handlebars::DirectorySourceOptions;
@@ -11,15 +12,20 @@ mod wkd_result;
 
 use render::render;
 
-#[get("/api/{user_id}")]
-async fn api(user_id: web::Path<String>) -> Result<impl Responder> {
-    let wkd_result = wkd_result::get_wkd(&user_id).await;
-    Ok(web::Json(wkd_result))
-}
-
 #[derive(Deserialize)]
 struct FormData {
     email: Option<String>,
+}
+
+#[get("/api/lookup")]
+async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
+    let email = match &form.email {
+        Some(email) => email,
+        None => return Err(ErrorBadRequest("Missing email parameter")),
+    };
+
+    let result = wkd_result::get_wkd(email).await;
+    Ok(web::Json(result))
 }
 
 #[get("/")]
@@ -64,7 +70,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(handlebars_ref.clone())
             .service(lookup)
             .service(api)
-            .wrap(middleware::Logger::default())
+            .wrap(middleware::Logger::new(
+                "%a \"%U\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T",
+            ))
             .wrap(Governor::new(&governor_conf))
             .wrap(middleware::Compress::default())
     })
