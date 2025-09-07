@@ -68,6 +68,13 @@
             border-bottom: 2px solid #009879;
         }
 
+        .log-disclaimer {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.4;
+            margin-top: 1em;
+        }
+
         /* API section styling */
         .api-section {
             background-color: #fff;
@@ -264,7 +271,8 @@
             <code>Joe.Doe@example.org</code> using the API:
         </p>
         <p>
-            You would hit the following endpoint: <a href="/api/lookup?email=Joe.Doe@example.org">/api/lookup?email=Joe.Doe@example.org</a>,
+            You would hit the following endpoint: <a
+                href="/api/lookup?email=Joe.Doe@example.org">/api/lookup?email=Joe.Doe@example.org</a>,
             which would return JSON similar to:
         </p>
         <pre><code>{
@@ -292,10 +300,25 @@
 </body>
 
 <footer>
-    <p>Hosted by <a href="{{this.footer.host_url}}">{{this.footer.host_name}}</a> 
-<script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
-<noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript> - Source code available on <a
-            href="https://github.com/chimbosonic/wkd-tester">GitHub</a></p>
+    <p>Hosted by <a href="{{this.footer.host_url}}">{{this.footer.host_name}}</a>
+        <script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
+        <noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img
+                    alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript> -
+        Source code available on <a href="https://github.com/chimbosonic/wkd-tester">GitHub</a>
+    </p>
+    <div class="log-disclaimer">
+        <p>
+            Disclaimer: This server has logging enabled for debugging and abuse monitoring purposes.
+            Logs are not shared with third-parties and are stored for 48 hours. Provided e-mail
+            addresses are only used for the lookup and not logged.
+        </p>
+        <p>
+            Example of a log on lookup:
+            [2025-09-07T22:11:56Z INFO actix_web::middleware::logger] 172.19.0.4 "/" 200 9437 "https://wkd.dp42.dev/"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0
+            Safari/537.36" 1.196103
+        </p>
+    </div>
 </footer>
 
 </html>
