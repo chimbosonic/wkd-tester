@@ -1,9 +1,14 @@
 use bytes::Bytes;
-use chrono;
+use chrono::{self};
 use miette::Diagnostic;
 use pgp::composed::{Deserializable, SignedPublicKey};
 use pgp::types::KeyDetails;
 use thiserror::Error;
+
+mod fingerprint;
+mod randomart;
+use fingerprint::Fingerprint;
+use randomart::generate_randomart;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum WkdLoadError {
@@ -17,6 +22,8 @@ pub struct WkdKey {
     pub fingerprint: String,
     pub revocation_status: String,
     pub expiry: String,
+    pub algorithm: String,
+    pub randomart: String,
 }
 
 pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
@@ -27,12 +34,18 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         }
     };
 
+    let fingerprint = Fingerprint::new(&pub_key);
+
+    let algorithm = format!("{:?}", pub_key.algorithm());
+
+    let randomart = generate_randomart(&fingerprint, &algorithm).unwrap();
+
+    let fingerprint = fingerprint.to_string();
+
     let revocation_status = match pub_key.verify() {
         Err(reason) => format!("Revoked: {}", reason),
         Ok(_) => "Not as far as we know".to_string(),
     };
-
-    let fingerprint = pub_key.fingerprint().to_string().to_ascii_uppercase();
 
     let expiry = match pub_key.expires_at() {
         Some(date) => {
@@ -49,12 +62,16 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         fingerprint,
         revocation_status,
         expiry,
+        algorithm,
+        randomart,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use std::fs;
+
+    use crate::load::WkdLoadError;
 
     use super::*;
 
@@ -75,7 +92,10 @@ mod tests {
         let cert = load_key(data);
         assert!(cert.is_ok());
         let cert = cert.unwrap();
-        assert_eq!(cert.fingerprint, "A03351F7677A6D0B94F224A636CB3789EAC25E50");
+        assert_eq!(
+            cert.fingerprint.to_string(),
+            "A03351F7677A6D0B94F224A636CB3789EAC25E50"
+        );
         assert_eq!(cert.revocation_status, "Not as far as we know");
         assert_eq!(cert.expiry, "Expired on 2021-08-26 15:38:21 UTC");
     }
@@ -88,7 +108,15 @@ mod tests {
         let cert = load_key(data);
         assert!(cert.is_ok());
         let cert = cert.unwrap();
-        assert_eq!(cert.fingerprint, "AC48BC1F029B6188D97E2D807C855DB4466DF0C6");
+        assert_eq!(
+            cert.fingerprint.to_string(),
+            "AC48BC1F029B6188D97E2D807C855DB4466DF0C6"
+        );
         assert_eq!(cert.expiry, "Expires on 2037-11-12 12:15:56 UTC");
+
+        assert_eq!(
+            cert.randomart,
+            "+------[RSA]------+\n|      .=o        |\n|    o o +o       |\n|   . o o.E       |\n|o= .. ...        |\n|=.*.o   S        |\n| o.B + .         |\n|  + * +          |\n|   . + .         |\n|      .          |\n+-----[SHA1]------+"
+        );
     }
 }

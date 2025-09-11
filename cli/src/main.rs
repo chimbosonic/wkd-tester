@@ -62,6 +62,14 @@ fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
                     "{method} method key loading succeed with expiry status: {}",
                     key.expiry
                 );
+                println!(
+                    "{method} method key loading succeed with algorithm: {}",
+                    key.algorithm
+                );
+                println!(
+                    "{method} method key loading succeed with randomart:\n{}",
+                    key.randomart
+                );
             }
             Err(error) => {
                 println!("{method} method key loading failed with following errors:");

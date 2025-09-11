@@ -22,6 +22,8 @@ pub struct WkdKey {
     fingerprint: String,
     revocation_status: String,
     expiry: String,
+    algorithm: String,
+    randomart: String,
 }
 
 pub async fn get_wkd(user_id: &str) -> WkdResult {
@@ -83,6 +85,8 @@ impl WkdKey {
             fingerprint: wkd_key.fingerprint,
             revocation_status: wkd_key.revocation_status,
             expiry: wkd_key.expiry,
+            algorithm: wkd_key.algorithm,
+            randomart: wkd_key.randomart,
         }
     }
 }
@@ -97,11 +101,15 @@ mod tests {
             fingerprint: "fingerprint".to_string(),
             revocation_status: "revocation_status".to_string(),
             expiry: "expiry".to_string(),
+            algorithm: "algorithm".to_string(),
+            randomart: "randomart".to_string(),
         };
         let key = WkdKey::from(wkd_key);
         assert_eq!(key.fingerprint, "fingerprint");
         assert_eq!(key.revocation_status, "revocation_status");
         assert_eq!(key.expiry, "expiry");
+        assert_eq!(key.algorithm, "algorithm");
+        assert_eq!(key.randomart, "randomart");
     }
 
     #[test]

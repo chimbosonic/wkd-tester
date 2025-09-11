@@ -4124,6 +4124,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "chrono",
+ "hex",
  "miette",
  "mockito",
  "pgp",
