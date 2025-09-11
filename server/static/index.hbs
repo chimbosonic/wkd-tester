@@ -1,324 +1,458 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Web Key Directory - Tester</title>
     <style>
+        :root {
+            --bg: #0b0c10;
+            /* deep slate */
+            --panel: #111317;
+            --muted: #8b95a7;
+            --text: #e6edf3;
+            --accent: #6ee7b7;
+            /* mint */
+            --accent-2: #60a5fa;
+            /* soft blue */
+            --warn: #f59e0b;
+            /* amber */
+            --ok: #22c55e;
+            /* green */
+            --border: #1f2430;
+            --code: #0d1117;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f7f9fc;
+                --panel: #ffffff;
+                --muted: #5a6579;
+                --text: #0b1220;
+                --accent: #059669;
+                --accent-2: #2563eb;
+                --warn: #b45309;
+                --ok: #047857;
+                --border: #e5e7eb;
+                --code: #f3f4f6;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
-            line-height: 1.6;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+            height: 100%;
         }
 
-        /* Styled description container */
-        .description {
-            background-color: #fff;
-            padding: 20px;
-            border-left: 4px solid #009879;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        body {
+            margin: 0;
+            font-family: monospace;
+            line-height: 1.45;
+            color: var(--text);
+            background: var(--bg);
         }
 
-        .description p {
-            margin-bottom: 16px;
+        .wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px;
         }
 
-        .description ul {
-            margin: 10px 0 10px 20px;
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+            margin-bottom: 24px;
         }
 
-        table {
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        .title {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .result-table {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-bottom: 20px;
-            /* Optional spacing */
+        .title h1 {
+            margin: 0;
+            font-size: clamp(22px, 3.2vw, 34px);
+            letter-spacing: -0.02em;
         }
 
-        th,
-        td {
-            border: 1px solid #dddddd;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        thead tr {
-            background-color: #009879;
-            color: #ffffff;
-        }
-
-        tbody tr {
-            border-bottom: 1px solid #dddddd;
-        }
-
-        tbody tr:nth-of-type(even) {
-            background-color: #f3f3f3;
-        }
-
-        tbody tr:last-of-type {
-            border-bottom: 2px solid #009879;
-        }
-
-        .log-disclaimer {
-            font-size: 0.8rem;
-            color: #666;
-            line-height: 1.4;
-            margin-top: 1em;
-        }
-
-        /* API section styling */
-        .api-section {
-            background-color: #fff;
-            padding: 20px;
-            border-left: 4px solid #009879;
-            border-radius: 5px;
-            margin-top: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .api-section pre {
-            background-color: #f4f4f4;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-        }
-
-        .api-section code {
+        .subtitle {
+            color: var(--muted);
             font-size: 14px;
         }
 
-        input[type="email"],
-        input[type="submit"] {
-            height: 30px;
-            /* Set a fixed height for both */
-            font-size: 16px;
-            border-radius: 4px;
-            padding: 0 10px;
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .04));
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, .15);
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .fingerprint {
+            font-size: 14px;
+            letter-spacing: .06em;
+            word-break: break-all;
+        }
+
+        @media (min-width: 820px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .section-title {
+            font-size: 13px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 8px 0 14px;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 10px 14px;
+            align-items: start;
+        }
+
+        .k {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .v {
+            background: var(--code);
+            border: 1px dashed var(--border);
+            padding: 8px 10px;
+            border-radius: 10px;
+            overflow: auto;
+        }
+
+        .uri {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .uri a {
+            color: var(--accent-2);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .uri a:hover {
+            text-decoration: underline;
+        }
+
+        pre.randomart {
+            margin: 0;
+            white-space: pre;
+            line-height: 1.05;
+            font-size: 12px;
+            color: var(--muted);
+            background: var(--code);
+            border: 1px dashed var(--border);
+            padding: 12px;
+            border-radius: 12px;
+            overflow: auto;
+        }
+
+        .errors {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .04));
+        }
+
+        footer {
+            margin-top: 20px;
+            color: var(--muted);
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .note {
+            max-width: 780px;
+        }
+
+        form.lookup {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         input[type="email"] {
-            border: 1px solid #ccc;
+            height: 38px;
+            font-size: 16px;
+            border-radius: 10px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--text);
+        }
+
+        input[type="email"]::placeholder {
+            color: var(--muted);
         }
 
         input[type="submit"] {
-            background-color: #009879;
-            color: #fff;
-            border: none;
+            height: 38px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 0 16px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(110, 231, 183, .18), rgba(96, 165, 250, .18));
+            color: var(--text);
             cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            /* Adjust padding if needed so the text looks centered */
-            padding: 0 12px;
         }
 
         input[type="submit"]:hover {
-            background-color: #007b63;
+            filter: brightness(1.08);
         }
     </style>
 </head>
 
 <body>
-    <h1>Web Key Directory - Tester</h1>
-    <div class="description">
-        <p>
-            The <a href="https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/">OpenPGP Web Key
-                Directory</a>
-            is a key discovery scheme that allows you to locate OpenPGP keys using an e-mail address.
-        </p>
-        <p>
-            OpenPGP defines User IDs (which include e-mail addresses) as UTF-8 strings. To simplify storing these in a
-            file system, implementations first convert all uppercase ASCII characters in the local-part of the address
-            to
-            lowercase (non-ASCII characters remain unchanged). This normalized local-part is then hashed using SHA-1,
-            and the
-            resulting 160-bit digest is encoded with the Z-Base-32 method, producing a fixed-length 32-character string.
-        </p>
-        <p>
-            Two methods are defined to form the lookup URI:
-        </p>
-        <ul>
-            <li>
-                <strong>Advanced Method</strong>: Requires a dedicated <code>openpgpkey</code> sub-domain. The URI is
-                built by
-                concatenating:
-                <br><code>https://openpgpkey.&lt;domain&gt;/.well-known/openpgpkey/&lt;domain&gt;/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
-                <br>
-                For example, for <code>Joe.Doe@Example.ORG</code>:
-                <br><code>https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
-            </li>
-            <li>
-                <strong>Direct Method</strong>: Does not require additional DNS entries. The URI is built by
-                concatenating:
-                <br><code>https://&lt;domain&gt;/.well-known/openpgpkey/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
-                <br>
-                For example, for <code>Joe.Doe@Example.ORG</code>:
-                <br><code>https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
-            </li>
-        </ul>
-        <p>
-            According to the standard, implementations must first try the Advanced Method. Only if the required
-            sub-domain does
-            not exist should the Direct Method be used. Note that a non-responding server does not automatically trigger
-            a
-            fallback.
-        </p>
-    </div>
-    <div class="api-section">
-        <h2>Lookup</h2>
-        <p>For testing purposes, you can use the following form to look up keys or generate the locations you need to
-            store
-            your
-            binary formatted key:</p>
-        <form action="/" method="get">
-            <label for="email">E-mail address:</label>
-            <input type="email" id="email" name="email" required>
-            <input type="submit" value="Lookup">
-        </form>
-
-        {{#if this.data}}
-        <h3>Results for {{this.data.user_id}}</h3>
-        <div class="result-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Direct Method</th>
-                        <th>Advanced Method</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>URI:</td>
-                        <td><a href="{{this.data.direct_method.uri}}">{{this.data.direct_method.uri}}</a></td>
-                        <td><a href="{{this.data.advanced_method.uri}}">{{this.data.advanced_method.uri}}</a></td>
-                    </tr>
-                    <tr>
-                        <td>Key Fingerprint:</td>
-                        <td>{{this.data.direct_method.key.fingerprint}}</td>
-                        <td>{{this.data.advanced_method.key.fingerprint}}</td>
-                    </tr>
-                    <tr>
-                        <td>Key Revocation Status:</td>
-                        <td>{{this.data.direct_method.key.revocation_status}}</td>
-                        <td>{{this.data.advanced_method.key.revocation_status}}</td>
-                    </tr>
-                    <tr>
-                        <td>Key Expiry Status:</td>
-                        <td>{{this.data.direct_method.key.expiry}}</td>
-                        <td>{{this.data.advanced_method.key.expiry}}</td>
-                    </tr>
-                    <tr>
-                        <td>Errors:</td>
-                        <td>
-                            {{#if this.data.direct_method.errors}}
-                            <table>
+    <div class="wrap">
+        <header>
+            <div class="title">
+                <h1> Web Key Directory - Tester </h1>
+            </div>
+        </header>
+        <section class="panel">
+            <div style="color:var(--muted); font-size:14px;">
+                <p>
+                    The <a href="https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/"
+                        style="color:var(--accent-2)">OpenPGP Web Key
+                        Directory</a>
+                    is a key discovery scheme that allows you to locate OpenPGP keys using an e-mail address.
+                </p>
+                <p>
+                    OpenPGP defines User IDs (which include e-mail addresses) as UTF-8 strings. To simplify storing
+                    these in a
+                    file system, implementations first convert all uppercase ASCII characters in the local-part of the
+                    address
+                    to
+                    lowercase (non-ASCII characters remain unchanged). This normalized local-part is then hashed using
+                    SHA-1,
+                    and the
+                    resulting 160-bit digest is encoded with the Z-Base-32 method, producing a fixed-length 32-character
+                    string.
+                </p>
+                <p>
+                    Two methods are defined to form the lookup URI:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Advanced Method</strong>: Requires a dedicated <code>openpgpkey</code> sub-domain. The
+                        URI is
+                        built by
+                        concatenating:
+                        <br><code>https://openpgpkey.&lt;domain&gt;/.well-known/openpgpkey/&lt;domain&gt;/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
+                        <br>
+                        For example, for <code>Joe.Doe@Example.ORG</code>:
+                        <br><code>https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+                    </li>
+                    <li>
+                        <strong>Direct Method</strong>: Does not require additional DNS entries. The URI is built by
+                        concatenating:
+                        <br><code>https://&lt;domain&gt;/.well-known/openpgpkey/hu/&lt;32-character-hash&gt;?l=&lt;local-part&gt;</code>
+                        <br>
+                        For example, for <code>Joe.Doe@Example.ORG</code>:
+                        <br><code>https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe</code>
+                    </li>
+                </ul>
+                <p>
+                    According to the standard, implementations must first try the Advanced Method. Only if the required
+                    sub-domain does not exist should the Direct Method be used. Note that a non-responding server does
+                    not automatically trigger a fallback.
+                </p>
+            </div>
+        </section>
+        <section class="panel" style="margin-top:16px;">
+            <h2 id="lookup-heading" class="section-title">Lookup</h2>
+            <p class="subtitle">For testing purposes, you can use the following form to look up keys or generate the
+                locations you need to store your binary formatted key:
+            </p>
+            <form class="lookup" action="/" method="get">
+                <label for="email" style="color:var(--muted);">E‑mail address</label>
+                <input type="email" id="email" name="email" placeholder="name@example.org" required>
+                <input type="submit" value="Lookup">
+            </form>
+            {{#if this.data}}
+            {{#with this.data}}
+            <h3 style="margin:14px 0 6px;">Results for {{this.user_id}}</h3>
+            <div class="grid">
+                {{#each this.methods}}
+                <section class="panel">
+                    <h4 class="section-title">{{this.method_type}} Method</h4>
+                    <div class="kv">
+                        <div class="k">URI</div>
+                        <div class="v uri">
+                            <a href="{{this.uri}}">{{this.uri}}</a>
+                        </div>
+                        <div class="k">Fingerprint</div>
+                        <div class="v fingerprint">{{this.key.fingerprint}}</div>
+                        <div class="k">Algorithm</div>
+                        <div class="v">{{this.key.algorithm}}</div>
+                        <div class="k">Revocation</div>
+                        <div class="v">{{this.key.revocation_status}}</div>
+                        <div class="k">Expiry</div>
+                        <div class="v">{{this.key.expiry}}</div>
+                        <div class="k">Randomart</div>
+                        <div class="v">
+                            <pre>{{{this.key.randomart}}}</pre>
+                        </div>
+                        <div class="k">Errors</div>
+                        <div class="v">
+                            {{#if this.errors.[0]}}
+                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
                                 <thead>
-                                    <tr>
-                                        <th>Error Code</th>
-                                        <th>Error Message</th>
+                                    <tr style="background:var(--code); color:var(--muted);">
+                                        <th style="text-align:left; padding:6px; border:1px solid var(--border);">Error
+                                            Code
+                                        </th>
+                                        <th style="text-align:left; padding:6px; border:1px solid var(--border);">Error
+                                            Message
+                                        </th>
                                     </tr>
                                 </thead>
-                                {{#each this.data.direct_method.errors}}
                                 <tbody>
+                                    {{#each this.errors}}
                                     <tr>
-                                        <td>{{this.name}}</td>
-                                        <td>{{this.message}}</td>
+                                        <td style="padding:6px; border:1px solid var(--border);">{{this.name}}</td>
+                                        <td style="padding:6px; border:1px solid var(--border);">{{this.message}}</td>
                                     </tr>
+                                    {{/each}}
                                 </tbody>
-                                {{/each}}
                             </table>
+                            {{else}}
+                            <div class="errors"><span class="pill">No errors</span></div>
                             {{/if}}
-                        </td>
-                        <td>
-                            {{#if this.data.direct_method.errors}}
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Error Code</th>
-                                        <th>Error Message</th>
-                                    </tr>
-                                </thead>
-                                {{#each this.data.advanced_method.errors}}
-                                <tbody>
-                                    <tr>
-                                        <td>{{this.name}}</td>
-                                        <td>{{this.message}}</td>
-                                    </tr>
-                                </tbody>
-                                {{/each}}
-                            </table>
-                            {{/if}}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        {{/if}}
-    </div>
-    <div class="api-section">
-        <h2>API Usage</h2>
-        <p>
-            There is also an API that returns the same results in JSON format. For example, to look up
-            <code>Joe.Doe@example.org</code> using the API:
-        </p>
-        <p>
-            You would hit the following endpoint: <a
-                href="/api/lookup?email=Joe.Doe@example.org">/api/lookup?email=Joe.Doe@example.org</a>,
-            which would return JSON similar to:
-        </p>
-        <pre><code>{
-  "user_id": "Joe.Doe@example.org",
-  "direct_method": {
-    "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
-    "key": {
-      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-      "revocation_status": "Not as far as we know",
-      "expiry": "Expires on 2037-11-12 12:15:56 UTC"
-    },
-    "errors": []
-  },
-  "advanced_method": {
-    "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
-    "key": {
-      "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-      "revocation_status": "Not as far as we know",
-      "expiry": "Expires on 2037-11-12 12:15:56 UTC"
-    },
-    "errors": []
-  }
-}</code></pre>
+                        </div>
+                    </div>
+                </section>
+                {{/each}}
+                {{/with}}
+                {{/if}}
+            </div>
+        </section>
+        <section class="panel" aria-labelledby="api-heading" style="margin-top:16px;">
+            <h2 id="api-heading" class="section-title">API usage</h2>
+            <p class="subtitle">
+                There is also an API that returns the same results in JSON format. For example, to look up
+                <code>Joe.Doe@example.org</code> using the API:
+            </p>
+            <p class="subtitle">
+                You would hit the following endpoint: <a href="/api/lookup?email=Joe.Doe@example.org"
+                    style="color:var(--accent-2)">/api/lookup?email=Joe.Doe@example.org</a>,
+                which would return JSON similar to:
+            </p>
+            <pre class="randomart" aria-label="API JSON example"><code>
+{ 
+    "user_id": "Joe.Doe@example.org", 
+    "methods": [
+        {
+            "uri": "https://example.org/.well-known/openpgpkey/hu/z9naq3iddua5t55b3hp1w3hwz8eyrc7n?l=alexis.lowe",
+            "key": {
+                "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
+                "revocation_status": "Not as far as we know",
+                "expiry": "Expires on 2037-11-12 12:15:56 UTC",
+                "algorithm": "RSA",
+                "randomart": "+------[RSA]------+\n|      .=o        |\n|    o o +o       |\n|   . o o.E       |\n|o= .. ...        |\n|=.*.o   S        |\n| o.B + .         |\n|  + * +          |\n|   . + .         |\n|      .          |\n+-----[SHA1]------+"
+            },
+            "errors": [],
+            "method_type": "Direct Method"
+        },
+        {
+            "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/chimbosonic.com/hu/z9naq3iddua5t55b3hp1w3hwz8eyrc7n?l=alexis.lowe",
+            "key": {
+                "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
+                "revocation_status": "Not as far as we know",
+                "expiry": "Expires on 2037-11-12 12:15:56 UTC",
+                "algorithm": "RSA",
+                "randomart": "+------[RSA]------+\n|      .=o        |\n|    o o +o       |\n|   . o o.E       |\n|o= .. ...        |\n|=.*.o   S        |\n| o.B + .         |\n|  + * +          |\n|   . + .         |\n|      .          |\n+-----[SHA1]------+"
+            },
+            "errors": [],
+            "method_type": "Advanced Method"
+        }
+    ]
+}
+        </code></pre>
+        </section>
+        <footer style="margin-top:16px;">
+            <p>
+                Hosted by <a href="{{this.footer.host_url}}" style="color:var(--accent-2)">{{this.footer.host_name}}</a>
+                <script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
+                <noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img
+                            alt="Donate using Liberapay"
+                            src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
+                - Source code
+                available on <a href="https://github.com/chimbosonic/wkd-tester"
+                    style="color:var(--accent-2)">GitHub</a>
+            </p>
+            <div class="note">
+                <details>
+                    <summary class="subtitle">Disclaimer: This server has logging enabled for debugging and
+                        abuse monitoring purposes. Logs are not shared with third-parties and are stored for 48 hours.
+                        Submitted e-mail addresses are only used for the lookup and not logged.
+                    </summary>
+                    <p>Example of a log on Lookup:</p>
+                    <p> [2025-09-07T22:11:56Z INFO actix_web::middleware::logger] 172.19.0.4 "/"
+                        200 9437
+                        "https://wkd.dp42.dev/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+                        AppleWebKit/537.36
+                        (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" 1.196103
+                    </p>
+                </details>
+            </div>
+        </footer>
     </div>
 </body>
-
-<footer>
-    <p>Hosted by <a href="{{this.footer.host_url}}">{{this.footer.host_name}}</a>
-        <script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
-        <noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img
-                    alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript> -
-        Source code available on <a href="https://github.com/chimbosonic/wkd-tester">GitHub</a>
-    </p>
-    <div class="log-disclaimer">
-        <details>
-            <summary>Disclaimer: This server has logging enabled for debugging and abuse monitoring purposes.
-                Logs are not shared with third-parties and are stored for 48 hours. Provided e-mail
-                addresses are only used for the lookup and not logged.</summary>
-            <p>Example of a log on Lookup:</p>
-            <p>
-                [2025-09-07T22:11:56Z INFO actix_web::middleware::logger] 172.19.0.4 "/" 200 9437
-                "https://wkd.dp42.dev/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
-                AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" 1.196103
-            </p>
-        </details>
-    </div>
-</footer>
 
 </html>

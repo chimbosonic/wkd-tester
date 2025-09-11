@@ -1,16 +1,20 @@
 use serde::{Deserialize, Serialize};
-
+#[derive(Serialize, Deserialize)]
+pub enum WkdMethodType {
+    Direct,
+    Advanced,
+}
 #[derive(Serialize, Deserialize)]
 pub struct WkdResult {
     user_id: String,
-    direct_method: WkdUriResult,
-    advanced_method: WkdUriResult,
+    methods: Vec<WkdUriResult>,
 }
 #[derive(Serialize, Deserialize)]
 pub struct WkdUriResult {
     uri: String,
     key: Option<WkdKey>,
     errors: Vec<WkdError>,
+    method_type: WkdMethodType,
 }
 #[derive(Serialize, Deserialize)]
 pub struct WkdError {
@@ -32,31 +36,49 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
         Err(err) => {
             return WkdResult {
                 user_id: user_id.to_string(),
-                direct_method: WkdUriResult {
-                    uri: "".to_string(),
-                    key: None,
-                    errors: vec![WkdError::from(&err)],
-                },
-                advanced_method: WkdUriResult {
-                    uri: "".to_string(),
-                    key: None,
-                    errors: vec![WkdError::from(&err)],
-                },
+                methods: vec![
+                    WkdUriResult {
+                        uri: "".to_string(),
+                        key: None,
+                        errors: vec![WkdError::from(&err)],
+                        method_type: WkdMethodType::Direct,
+                    },
+                    WkdUriResult {
+                        uri: "".to_string(),
+                        key: None,
+                        errors: vec![WkdError::from(&err)],
+                        method_type: WkdMethodType::Advanced,
+                    },
+                ],
             };
         }
     };
 
     let wkd_fetch = wkd::fetch::WkdFetch::fetch(&wkd_uri).await;
-
+    let methods = vec![
+        WkdUriResult::from(
+            wkd_fetch.direct_method,
+            wkd_uri.direct_uri,
+            WkdMethodType::Direct,
+        ),
+        WkdUriResult::from(
+            wkd_fetch.advanced_method,
+            wkd_uri.advanced_uri,
+            WkdMethodType::Advanced,
+        ),
+    ];
     WkdResult {
         user_id: user_id.to_string(),
-        direct_method: WkdUriResult::from(wkd_fetch.direct_method, wkd_uri.direct_uri),
-        advanced_method: WkdUriResult::from(wkd_fetch.advanced_method, wkd_uri.advanced_uri),
+        methods,
     }
 }
 
 impl WkdUriResult {
-    pub fn from(wkd_fetch: wkd::fetch::WkdFetchUriResult, uri: impl std::string::ToString) -> Self {
+    pub fn from(
+        wkd_fetch: wkd::fetch::WkdFetchUriResult,
+        uri: impl std::string::ToString,
+        method_type: WkdMethodType,
+    ) -> Self {
         let key: Option<WkdKey> = match wkd_fetch.data {
             Some(data) => wkd::load::load_key(data).ok().map(WkdKey::from),
             None => None,
@@ -66,6 +88,7 @@ impl WkdUriResult {
             uri: uri.to_string(),
             key,
             errors: wkd_fetch.errors.iter().map(WkdError::from).collect(),
+            method_type,
         }
     }
 }
@@ -129,7 +152,7 @@ mod tests {
             errors: vec![wkd::fetch::WkdFetchError::AccessControlAllowOriginNotStar],
             data: None,
         };
-        let wkd_uri_result = WkdUriResult::from(wkd_fetch, "uri");
+        let wkd_uri_result = WkdUriResult::from(wkd_fetch, "uri", WkdMethodType::Direct);
         assert!(wkd_uri_result.key.is_none());
         assert_eq!(wkd_uri_result.errors.len(), 1);
         assert_eq!(
@@ -147,16 +170,16 @@ mod tests {
         let wkd_result = get_wkd("Joe.Doe@example.org").await;
         assert_eq!(wkd_result.user_id, "Joe.Doe@example.org");
         assert_eq!(
-            wkd_result.direct_method.uri,
+            wkd_result.methods.as_slice()[0].uri,
             "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
         );
         assert_eq!(
-            wkd_result.advanced_method.uri,
+            wkd_result.methods.as_slice()[1].uri,
             "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
         );
-        assert!(wkd_result.direct_method.key.is_none());
-        assert!(wkd_result.advanced_method.key.is_none());
-        assert_eq!(wkd_result.direct_method.errors.len(), 3);
-        assert_eq!(wkd_result.advanced_method.errors.len(), 3);
+        assert!(wkd_result.methods.as_slice()[0].key.is_none());
+        assert!(wkd_result.methods.as_slice()[1].key.is_none());
+        assert_eq!(wkd_result.methods.as_slice()[1].errors.len(), 3);
+        assert_eq!(wkd_result.methods.as_slice()[0].errors.len(), 3);
     }
 }
