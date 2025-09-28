@@ -52,6 +52,15 @@ pub enum WkdFetchError {
     WkdPolicyFilePathGenerationFailed,
 }
 
+#[derive(Debug)]
+pub enum WkdFetchSuccess {
+    HeadMethod,
+    NoIndex,
+    PolicyFile,
+    ContentTypeOctetStream,
+    AccessControlAllowOriginStar,
+}
+
 pub struct WkdFetch {
     pub direct_method: WkdFetchUriResult,
     pub advanced_method: WkdFetchUriResult,
@@ -72,6 +81,7 @@ impl WkdFetch {
 #[derive(Debug)]
 pub struct WkdFetchUriResult {
     pub errors: Vec<WkdFetchError>,
+    pub successes: Vec<WkdFetchSuccess>,
     pub data: Option<Bytes>,
 }
 
@@ -88,17 +98,23 @@ fn get_policy_url(url: &str) -> Option<String> {
         .map(|pos| format!("{}policy", &url[..=pos]))
 }
 
-async fn check_head_method(client: &reqwest::Client, url: &str) -> Result<(), WkdFetchError> {
+async fn check_head_method(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<WkdFetchSuccess, WkdFetchError> {
     if let Ok(response) = client.head(url).send().await
         && response.status().as_u16() == 200
     {
-        return Ok(());
+        return Ok(WkdFetchSuccess::HeadMethod);
     }
 
     Err(WkdFetchError::FailedHeadMethod)
 }
 
-async fn check_for_indexing(client: &reqwest::Client, url: &str) -> Result<(), WkdFetchError> {
+async fn check_for_indexing(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<WkdFetchSuccess, WkdFetchError> {
     let index_url = trim_uri(url);
     if let Ok(response) = client.get(index_url).send().await
         && response.status().as_u16() == 200
@@ -106,10 +122,13 @@ async fn check_for_indexing(client: &reqwest::Client, url: &str) -> Result<(), W
         return Err(WkdFetchError::WkdPathShouldNotHaveIndex);
     }
 
-    Ok(())
+    Ok(WkdFetchSuccess::NoIndex)
 }
 
-async fn check_policy_file(client: &reqwest::Client, url: &str) -> Result<(), WkdFetchError> {
+async fn check_policy_file(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<WkdFetchSuccess, WkdFetchError> {
     let policy_url = match get_policy_url(url) {
         Some(policy_url) => policy_url,
         None => return Err(WkdFetchError::WkdPolicyFilePathGenerationFailed),
@@ -118,7 +137,7 @@ async fn check_policy_file(client: &reqwest::Client, url: &str) -> Result<(), Wk
     if let Ok(response) = client.get(&policy_url).send().await
         && response.status().as_u16() == 200
     {
-        return Ok(());
+        return Ok(WkdFetchSuccess::PolicyFile);
     }
 
     Err(WkdFetchError::WkdPolicyFileNotFound)
@@ -129,6 +148,7 @@ async fn fetch_uri<T>(
 ) -> WkdFetchUriResult {
     let mut result = WkdFetchUriResult {
         errors: Vec::new(),
+        successes: Vec::new(),
         data: None,
     };
 
@@ -142,16 +162,19 @@ async fn fetch_uri<T>(
 
     let client = reqwest::Client::new();
 
-    if let Err(err) = check_head_method(&client, url.as_str()).await {
-        result.errors.push(err);
+    match check_head_method(&client, url.as_str()).await {
+        Ok(success) => result.successes.push(success),
+        Err(error) => result.errors.push(error),
     }
 
-    if let Err(err) = check_for_indexing(&client, url.as_str()).await {
-        result.errors.push(err);
+    match check_for_indexing(&client, url.as_str()).await {
+        Ok(success) => result.successes.push(success),
+        Err(error) => result.errors.push(error),
     }
 
-    if let Err(err) = check_policy_file(&client, url.as_str()).await {
-        result.errors.push(err);
+    match check_policy_file(&client, url.as_str()).await {
+        Ok(success) => result.successes.push(success),
+        Err(error) => result.errors.push(error),
     }
 
     let response = match client.get(url).send().await {
@@ -168,18 +191,20 @@ async fn fetch_uri<T>(
         return result;
     }
 
-    if let Some(header_value) = response.headers().get("content-type")
-        && header_value != "application/octet-stream"
-    {
-        result.errors.push(WkdFetchError::ContentTypeNotOctetStream);
+    match response.headers().get("content-type") {
+        Some(header_value) if header_value == "application/octet-stream" => result
+            .successes
+            .push(WkdFetchSuccess::ContentTypeOctetStream),
+        _ => result.errors.push(WkdFetchError::ContentTypeNotOctetStream),
     }
 
-    if let Some(header_value) = response.headers().get("access-control-allow-origin")
-        && header_value != "*"
-    {
-        result
+    match response.headers().get("access-control-allow-origin") {
+        Some(header_value) if header_value == "*" => result
+            .successes
+            .push(WkdFetchSuccess::AccessControlAllowOriginStar),
+        _ => result
             .errors
-            .push(WkdFetchError::AccessControlAllowOriginNotStar);
+            .push(WkdFetchError::AccessControlAllowOriginNotStar),
     }
 
     let data = match response.bytes().await {

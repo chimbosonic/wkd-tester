@@ -9,13 +9,43 @@ pub struct WkdResult {
     user_id: String,
     methods: Vec<WkdUriResult>,
 }
+
 #[derive(Serialize, Deserialize)]
 pub struct WkdUriResult {
     uri: String,
     key: Option<WkdKey>,
     errors: Vec<WkdError>,
     method_type: WkdMethodType,
+    successes: Vec<WkdSuccess>,
 }
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct WkdSuccess(String);
+
+use wkd::fetch::WkdFetchSuccess;
+
+impl From<&str> for WkdSuccess {
+    fn from(value: &str) -> Self {
+        WkdSuccess(value.to_string())
+    }
+}
+
+impl From<&WkdFetchSuccess> for WkdSuccess {
+    fn from(value: &WkdFetchSuccess) -> Self {
+        match value {
+            WkdFetchSuccess::AccessControlAllowOriginStar => {
+                WkdSuccess::from("Access-Control-Allow: *")
+            }
+            WkdFetchSuccess::ContentTypeOctetStream => {
+                WkdSuccess::from("Content-Type: application/octet-stream")
+            }
+            WkdFetchSuccess::HeadMethod => WkdSuccess::from("HTTP Head Method"),
+            WkdFetchSuccess::NoIndex => WkdSuccess::from("No Index found"),
+            WkdFetchSuccess::PolicyFile => WkdSuccess::from("Policy File Found"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct WkdError {
     name: String,
@@ -42,12 +72,14 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
                         key: None,
                         errors: vec![WkdError::from(&err)],
                         method_type: WkdMethodType::Direct,
+                        successes: vec![],
                     },
                     WkdUriResult {
                         uri: "".to_string(),
                         key: None,
                         errors: vec![WkdError::from(&err)],
                         method_type: WkdMethodType::Advanced,
+                        successes: vec![],
                     },
                 ],
             };
@@ -88,6 +120,7 @@ impl WkdUriResult {
             uri: uri.to_string(),
             key,
             errors: wkd_fetch.errors.iter().map(WkdError::from).collect(),
+            successes: wkd_fetch.successes.iter().map(WkdSuccess::from).collect(),
             method_type,
         }
     }
@@ -149,6 +182,7 @@ mod tests {
     #[test]
     fn test_wkd_uri_result_from() {
         let wkd_fetch = wkd::fetch::WkdFetchUriResult {
+            successes: vec![],
             errors: vec![wkd::fetch::WkdFetchError::AccessControlAllowOriginNotStar],
             data: None,
         };
@@ -181,5 +215,15 @@ mod tests {
         assert!(wkd_result.methods.as_slice()[1].key.is_none());
         assert_eq!(wkd_result.methods.as_slice()[1].errors.len(), 3);
         assert_eq!(wkd_result.methods.as_slice()[0].errors.len(), 3);
+        println!("{:?}", wkd_result.methods.as_slice()[0].successes);
+
+        assert_eq!(
+            wkd_result.methods.as_slice()[0].successes[0],
+            WkdSuccess::from("No Index found")
+        );
+        assert_eq!(
+            wkd_result.methods.as_slice()[1].successes[0],
+            WkdSuccess::from("No Index found")
+        );
     }
 }

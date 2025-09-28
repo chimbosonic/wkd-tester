@@ -57,7 +57,7 @@
         }
 
         .wrap {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 24px;
         }
@@ -348,6 +348,22 @@
                         <div class="v">
                             <pre>{{{this.key.randomart}}}</pre>
                         </div>
+                        <div class="k">Passed Tests</div>
+                        <div class="v">
+                            {{#if this.successes.[0]}}
+                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                <tbody>
+                                    {{#each this.successes}}
+                                    <tr>
+                                        <td style="padding:6px; border:1px solid var(--border);">✅  {{this}}</td>
+                                    </tr>
+                                    {{/each}}
+                                </tbody>
+                            </table>
+                            {{else}}
+                            <div class="errors"><span class="pill">No errors</span></div>
+                            {{/if}}
+                        </div>
                         <div class="k">Errors</div>
                         <div class="v">
                             {{#if this.errors.[0]}}
@@ -381,7 +397,7 @@
                 {{/with}}
 
             </div>
-                {{/if}}
+            {{/if}}
         </section>
         <section class="panel" style="margin-top:16px;">
             <h2 class="section-title">API usage</h2>
@@ -395,34 +411,54 @@
                 which would return JSON similar to:
             </p>
             <pre class="randomart" aria-label="API JSON example"><code>
-{ 
-    "user_id": "Joe.Doe@example.org", 
-    "methods": [
+{
+  "user_id": "Joe.Doe@example.org",
+  "methods": [
+    {
+      "uri": "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
+      "key": null,
+      "errors": [
         {
-            "uri": "https://example.org/.well-known/openpgpkey/hu/z9naq3iddua5t55b3hp1w3hwz8eyrc7n?l=alexis.lowe",
-            "key": {
-                "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-                "revocation_status": "Not as far as we know",
-                "expiry": "Expires on 2037-11-12 12:15:56 UTC",
-                "algorithm": "RSA",
-                "randomart": "+------[RSA]------+\n|      .=o        |\n|    o o +o       |\n|   . o o.E       |\n|o= .. ...        |\n|=.*.o   S        |\n| o.B + .         |\n|  + * +          |\n|   . + .         |\n|      .          |\n+-----[SHA1]------+"
-            },
-            "errors": [],
-            "method_type": "Direct Method"
+          "name": "FailedHeadMethod",
+          "message": "Failed existence cheack with HEAD Method"
         },
         {
-            "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/chimbosonic.com/hu/z9naq3iddua5t55b3hp1w3hwz8eyrc7n?l=alexis.lowe",
-            "key": {
-                "fingerprint": "AC48BC1F029B6188D97E2D807C855DB4466DF0C6",
-                "revocation_status": "Not as far as we know",
-                "expiry": "Expires on 2037-11-12 12:15:56 UTC",
-                "algorithm": "RSA",
-                "randomart": "+------[RSA]------+\n|      .=o        |\n|    o o +o       |\n|   . o o.E       |\n|o= .. ...        |\n|=.*.o   S        |\n| o.B + .         |\n|  + * +          |\n|   . + .         |\n|      .          |\n+-----[SHA1]------+"
-            },
-            "errors": [],
-            "method_type": "Advanced Method"
+          "name": "WkdPolicyFileNotFound",
+          "message": "Policy file not found"
+        },
+        {
+          "name": "StatusNot200(404)",
+          "message": "Status code is not 200"
         }
-    ]
+      ],
+      "method_type": "Direct",
+      "successes": [
+        "No Index found"
+      ]
+    },
+    {
+      "uri": "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe",
+      "key": null,
+      "errors": [
+        {
+          "name": "FailedHeadMethod",
+          "message": "Failed existence cheack with HEAD Method"
+        },
+        {
+          "name": "WkdPolicyFileNotFound",
+          "message": "Policy file not found"
+        },
+        {
+          "name": "FailedToFetchUrl(reqwest::Error { kind: Request, url: \"https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) })",
+          "message": "Failed to fetch given URL"
+        }
+      ],
+      "method_type": "Advanced",
+      "successes": [
+        "No Index found"
+      ]
+    }
+  ]
 }
         </code></pre>
         </section>

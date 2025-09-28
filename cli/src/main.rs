@@ -47,6 +47,11 @@ fn unwrap_wkd_fetch(wkd_fetch: WkdFetchUriResult, method: &str) {
         }
     }
 
+    println!("{method} tests:");
+    for success in wkd_fetch.successes {
+        println!(" - {success:?} Passed")
+    }
+
     if let Some(data) = wkd_fetch.data {
         match load_key(data) {
             Ok(key) => {
