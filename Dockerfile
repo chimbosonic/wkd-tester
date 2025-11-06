@@ -6,7 +6,7 @@ COPY . /build
 
 WORKDIR /build/server
 
-RUN cargo build --release
+RUN apt-get update -y && apt-get install -y curl && cargo build --release
 
 FROM rust:slim
 

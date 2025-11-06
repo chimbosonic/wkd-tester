@@ -5,6 +5,8 @@ use actix_web::{App, HttpResponse, HttpServer, Responder, Result, get, middlewar
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
 use serde::Deserialize;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod footer;
 mod render;
@@ -12,11 +14,41 @@ mod wkd_result;
 
 use render::render;
 
-#[derive(Deserialize)]
+#[derive(OpenApi)]
+#[openapi(
+    paths(api),
+    components(schemas(
+        wkd_result::WkdResult,
+        wkd_result::WkdUriResult,
+        wkd_result::WkdMethodType,
+        wkd_result::WkdError,
+        wkd_result::WkdKey,
+        wkd_result::WkdSuccess
+    )),
+    info(
+        title = "WKD Tester API",
+        version = "0.1.0",
+        description = "API for testing Web Key Directory (WKD) lookups"
+    )
+)]
+struct ApiDoc;
+
+#[derive(Deserialize, utoipa::IntoParams)]
 struct FormData {
+    /// Email address to lookup in WKD
     email: Option<String>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/lookup",
+    params(FormData),
+    responses(
+        (status = 200, description = "WKD lookup successful", body = wkd_result::WkdResult),
+        (status = 400, description = "Missing email parameter")
+    ),
+    tag = "WKD Lookup"
+)]
 #[get("/api/lookup")]
 async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
     let email = match &form.email {
@@ -72,12 +104,19 @@ async fn main() -> std::io::Result<()> {
 
     let handlebars_ref = setup_handlebars();
 
+    let openapi = ApiDoc::openapi();
+
     println!("Starting server on http://{host}:{port}");
+    println!("Swagger UI available at http://{host}:{port}/swagger-ui/");
     HttpServer::new(move || {
         App::new()
             .app_data(handlebars_ref.clone())
             .service(lookup)
             .service(api)
+            .service(
+                SwaggerUi::new("/api-docs/ui/{_:.*}")
+                    .url("/api-docs/openapi.json", openapi.clone()),
+            )
             .wrap(middleware::Logger::new(
                 "%a \"%U\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T",
             ))

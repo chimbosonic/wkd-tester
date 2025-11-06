@@ -1,16 +1,19 @@
 use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize)]
+use utoipa::ToSchema;
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub enum WkdMethodType {
     Direct,
     Advanced,
 }
-#[derive(Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct WkdResult {
     user_id: String,
     methods: Vec<WkdUriResult>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct WkdUriResult {
     uri: String,
     key: Option<WkdKey>,
@@ -19,7 +22,7 @@ pub struct WkdUriResult {
     successes: Vec<WkdSuccess>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, ToSchema)]
 pub struct WkdSuccess(String);
 
 use wkd::fetch::WkdFetchSuccess;
@@ -46,12 +49,13 @@ impl From<&WkdFetchSuccess> for WkdSuccess {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct WkdError {
     name: String,
     message: String,
 }
-#[derive(Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct WkdKey {
     fingerprint: String,
     revocation_status: String,
