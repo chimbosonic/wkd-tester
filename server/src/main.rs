@@ -28,7 +28,12 @@ use render::render;
     info(
         title = "WKD Tester API",
         version = "0.1.0",
-        description = "API for testing Web Key Directory (WKD) lookups"
+        description = "API for testing Web Key Directory (WKD) lookups",
+        contact(name = "Alexis Lowe", url = "https://chimbosonic.com"),
+        license(
+            name = "MIT",
+            url = "https://github.com/chimbosonic/wkd-tester/blob/master/LICENSE"
+        )
     )
 )]
 struct ApiDoc;
@@ -107,7 +112,7 @@ async fn main() -> std::io::Result<()> {
     let openapi = ApiDoc::openapi();
 
     println!("Starting server on http://{host}:{port}");
-    println!("Swagger UI available at http://{host}:{port}/swagger-ui/");
+    println!("Swagger UI available at http://{host}:{port}/api-docs/ui/");
     HttpServer::new(move || {
         App::new()
             .app_data(handlebars_ref.clone())
