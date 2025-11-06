@@ -1,6 +1,8 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::error::ErrorBadRequest;
+use actix_web::http::StatusCode;
 use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
+use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{App, HttpResponse, HttpServer, Responder, Result, get, middleware, web};
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
@@ -58,7 +60,9 @@ struct FormData {
 async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
     let email = match &form.email {
         Some(email) => email,
-        None => return Err(ErrorBadRequest("Missing email parameter")),
+        None => {
+            return Err(ErrorBadRequest("Missing email parameter"));
+        }
     };
 
     let result = wkd_result::get_wkd(email).await;
@@ -98,6 +102,32 @@ fn setup_handlebars() -> web::Data<Handlebars<'static>> {
     web::Data::new(handlebars)
 }
 
+fn add_error_header<B>(
+    mut res: actix_web::dev::ServiceResponse<B>,
+) -> Result<ErrorHandlerResponse<B>> {
+    res.headers_mut()
+        .insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    Ok(ErrorHandlerResponse::Response(res.map_into_left_body()))
+}
+
+fn setup_logging_middleware() -> middleware::Logger {
+    middleware::Logger::new("%a \"%U\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T")
+}
+
+fn setup_compression_middleware() -> middleware::Compress {
+    middleware::Compress::default()
+}
+
+fn setup_default_headers_middleware() -> middleware::DefaultHeaders {
+    middleware::DefaultHeaders::new().add((CACHE_CONTROL, "public, max-age=604800"))
+}
+
+fn setup_error_handlers_middleware<B: 'static>() -> middleware::ErrorHandlers<B> {
+    middleware::ErrorHandlers::new()
+        .handler(StatusCode::NOT_FOUND, add_error_header)
+        .handler(StatusCode::BAD_REQUEST, add_error_header)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -122,11 +152,11 @@ async fn main() -> std::io::Result<()> {
                 SwaggerUi::new("/api-docs/ui/{_:.*}")
                     .url("/api-docs/openapi.json", openapi.clone()),
             )
-            .wrap(middleware::Logger::new(
-                "%a \"%U\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T",
-            ))
             .wrap(Governor::new(&governor_conf))
-            .wrap(middleware::Compress::default())
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware())
     })
     .bind((host, port))?
     .run()
@@ -142,8 +172,16 @@ mod tests {
     #[actix_web::test]
     async fn test_lookup_not_index() {
         let handlebars_ref = setup_handlebars();
-        let app =
-            test::init_service(App::new().app_data(handlebars_ref.clone()).service(lookup)).await;
+        let app = test::init_service(
+            App::new()
+                .app_data(handlebars_ref.clone())
+                .service(lookup)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get().uri("/not_found").to_request();
         let res = test::call_service(&app, req).await;
@@ -153,8 +191,16 @@ mod tests {
     #[actix_web::test]
     async fn test_lookup_no_email() {
         let handlebars_ref = setup_handlebars();
-        let app =
-            test::init_service(App::new().app_data(handlebars_ref.clone()).service(lookup)).await;
+        let app = test::init_service(
+            App::new()
+                .app_data(handlebars_ref.clone())
+                .service(lookup)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get().uri("/").to_request();
         let res = test::call_service(&app, req).await;
@@ -168,8 +214,16 @@ mod tests {
     #[actix_web::test]
     async fn test_lookup_email() {
         let handlebars_ref = setup_handlebars();
-        let app =
-            test::init_service(App::new().app_data(handlebars_ref.clone()).service(lookup)).await;
+        let app = test::init_service(
+            App::new()
+                .app_data(handlebars_ref.clone())
+                .service(lookup)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get()
             .uri("/?email=something")
@@ -185,20 +239,38 @@ mod tests {
 
     #[actix_web::test]
     async fn test_api_not_found() {
-        let app = test::init_service(App::new().service(api)).await;
+        let app = test::init_service(
+            App::new()
+                .service(api)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get().uri("/not_found").to_request();
         let res = test::call_service(&app, req).await;
-        assert_eq!(res.status(), StatusCode::NOT_FOUND)
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+        assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
     }
 
     #[actix_web::test]
     async fn test_api_no_email() {
-        let app = test::init_service(App::new().service(api)).await;
+        let app = test::init_service(
+            App::new()
+                .service(api)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get().uri("/api/lookup").to_request();
         let res = test::call_service(&app, req).await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
         let body = test::read_body(res).await;
         let body_str = std::str::from_utf8(&body).unwrap();
         assert!(body_str.contains("Missing email parameter"));
@@ -206,13 +278,22 @@ mod tests {
 
     #[actix_web::test]
     async fn test_api_email() {
-        let app = test::init_service(App::new().service(api)).await;
+        let app = test::init_service(
+            App::new()
+                .service(api)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
 
         let req = test::TestRequest::get()
             .uri("/api/lookup?email=something")
             .to_request();
         let res = test::call_service(&app, req).await;
         assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
         let body = test::read_body(res).await;
         let body_str = std::str::from_utf8(&body).unwrap();
         println!("API Response Body: {}", body_str);
