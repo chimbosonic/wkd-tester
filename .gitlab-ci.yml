@@ -38,7 +38,7 @@ test:
 
 build-oci:
   stage: build
-  image: docker:28-latest
+  image: docker:28-cli
   services:
     - docker:28-dind
   rules:
