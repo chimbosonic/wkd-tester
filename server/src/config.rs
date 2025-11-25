@@ -7,9 +7,18 @@ pub struct FooterData {
     libera_pay_user: &'static str,
 }
 
+#[derive(Clone, Serialize)]
+pub struct SiteMapData {
+    base_url: &'static str,
+}
+
 /// Make sure to update this with your information if you are self hosting.
 pub static FOOTER_DATA: FooterData = FooterData {
     host_url: "https://chimbosonic.com",
     host_name: "Alexis Lowe",
     libera_pay_user: "chimbosonic",
+};
+
+pub static SITEMAP_DATA: SiteMapData = SiteMapData {
+    base_url: "https://wkd.dp42.dev",
 };

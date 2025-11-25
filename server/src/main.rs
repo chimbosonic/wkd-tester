@@ -1,7 +1,7 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::error::ErrorBadRequest;
 use actix_web::http::StatusCode;
-use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
+use actix_web::http::header::{CACHE_CONTROL, CONTENT_TYPE, HeaderValue};
 use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{App, HttpResponse, HttpServer, Responder, Result, get, middleware, web};
 use handlebars::DirectorySourceOptions;
@@ -10,7 +10,7 @@ use serde::Deserialize;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-mod footer;
+mod config;
 mod render;
 mod wkd_result;
 
@@ -92,6 +92,23 @@ async fn lookup(form: web::Query<FormData>, hb: web::Data<Handlebars<'_>>) -> Ht
         .insert(CACHE_CONTROL, HeaderValue::from_static(control_header));
 
     response
+        .headers_mut()
+        .insert(CONTENT_TYPE, HeaderValue::from_static("text/html"));
+
+    response
+}
+
+#[get("/.well-known/sitemap.xml")]
+async fn serve_sitemap(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
+    let mut response = render(hb, "sitemap", &None);
+    response.headers_mut().insert(
+        CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age=604800"),
+    );
+    response
+        .headers_mut()
+        .insert(CONTENT_TYPE, HeaderValue::from_static("application/xml"));
+    response
 }
 
 fn setup_handlebars() -> web::Data<Handlebars<'static>> {
@@ -148,6 +165,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(handlebars_ref.clone())
             .service(lookup)
             .service(api)
+            .service(serve_sitemap)
             .service(
                 SwaggerUi::new("/api-docs/ui/{_:.*}")
                     .url("/api-docs/openapi.json", openapi.clone()),
@@ -209,6 +227,7 @@ mod tests {
             res.headers().get(CACHE_CONTROL).unwrap(),
             "public, max-age=604800"
         );
+        assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "text/html");
     }
 
     #[actix_web::test]
@@ -231,6 +250,7 @@ mod tests {
         let res = test::call_service(&app, req).await;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+        assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "text/html");
         let body = test::read_body(res).await;
         let body_str = std::str::from_utf8(&body).unwrap();
         assert!(body_str.contains("<title>Web Key Directory - Tester</title>"));
@@ -294,12 +314,46 @@ mod tests {
         let res = test::call_service(&app, req).await;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+        assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "application/json");
         let body = test::read_body(res).await;
         let body_str = std::str::from_utf8(&body).unwrap();
         println!("API Response Body: {}", body_str);
         assert_eq!(
             body_str,
             r#"{"user_id":"something","methods":[{"uri":"","key":null,"errors":[{"name":"InvalidEmailError","message":"User ID must be in the format '{local_part}@{domain_part}'"}],"method_type":"Direct","successes":[]},{"uri":"","key":null,"errors":[{"name":"InvalidEmailError","message":"User ID must be in the format '{local_part}@{domain_part}'"}],"method_type":"Advanced","successes":[]}]}"#
+        );
+    }
+
+    #[actix_web::test]
+    async fn test_sitemap() {
+        let handlebars_ref = setup_handlebars();
+        let app = test::init_service(
+            App::new()
+                .app_data(handlebars_ref.clone())
+                .service(serve_sitemap)
+                .wrap(setup_error_handlers_middleware())
+                .wrap(setup_logging_middleware())
+                .wrap(setup_compression_middleware())
+                .wrap(setup_default_headers_middleware()),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/.well-known/sitemap.xml")
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(
+            res.headers().get(CACHE_CONTROL).unwrap(),
+            "public, max-age=604800"
+        );
+        assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "application/xml");
+        let body = test::read_body(res).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        println!("SitemapXML Response Body: {}", body_str);
+        assert_eq!(
+            body_str,
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n  xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9\r\n      http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd\">\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>1.00</priority>\r\n  </url>\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/api-docs/ui/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>0.80</priority>\r\n  </url>\r\n</urlset>"
         );
     }
 }
