@@ -2,14 +2,14 @@ use serde::Serialize;
 
 #[derive(Clone, Serialize)]
 pub struct FooterData {
-    host_url: &'static str,
-    host_name: &'static str,
-    libera_pay_user: &'static str,
+    pub host_url: &'static str,
+    pub host_name: &'static str,
+    pub libera_pay_user: &'static str,
 }
 
 #[derive(Clone, Serialize)]
 pub struct SiteMapData {
-    base_url: &'static str,
+    pub base_url: &'static str,
 }
 
 /// Make sure to update this with your information if you are self hosting.

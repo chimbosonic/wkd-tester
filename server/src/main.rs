@@ -228,6 +228,14 @@ mod tests {
             "public, max-age=604800"
         );
         assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "text/html");
+        let body = test::read_body(res).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        assert!(body_str.contains("<title>Web Key Directory - Tester</title>"));
+        let canonical_link = format!(
+            "<link rel=\"canonical\" href=\"{}/\"/>",
+            config::SITEMAP_DATA.base_url
+        );
+        assert!(body_str.contains(&canonical_link));
     }
 
     #[actix_web::test]
