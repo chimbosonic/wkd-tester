@@ -38,9 +38,9 @@ test:
 
 build-oci:
   stage: build
-  image: docker:latest
+  image: docker:28-latest
   services:
-    - docker:dind
+    - docker:28-dind
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
