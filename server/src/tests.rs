@@ -1,0 +1,184 @@
+use actix_web::{
+    http::{StatusCode, header::CONTENT_TYPE},
+    test,
+};
+
+use super::*;
+
+#[actix_web::test]
+async fn test_lookup_not_index() {
+    let handlebars_ref = setup_handlebars();
+    let app = test::init_service(
+        App::new()
+            .app_data(handlebars_ref.clone())
+            .service(lookup)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get().uri("/not_found").to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::NOT_FOUND)
+}
+
+#[actix_web::test]
+async fn test_lookup_no_email() {
+    let handlebars_ref = setup_handlebars();
+    let app = test::init_service(
+        App::new()
+            .app_data(handlebars_ref.clone())
+            .service(lookup)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get().uri("/").to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(
+        res.headers().get(CACHE_CONTROL).unwrap(),
+        "public, max-age=604800"
+    );
+    assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "text/html");
+    let body = test::read_body(res).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+    assert!(body_str.contains("<title>Web Key Directory - Tester</title>"));
+    let canonical_link = format!(
+        "<link rel=\"canonical\" href=\"{}/\"/>",
+        config::SITEMAP_DATA.base_url
+    );
+    assert!(body_str.contains(&canonical_link));
+}
+
+#[actix_web::test]
+async fn test_lookup_email() {
+    let handlebars_ref = setup_handlebars();
+    let app = test::init_service(
+        App::new()
+            .app_data(handlebars_ref.clone())
+            .service(lookup)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/?email=something")
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+    assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "text/html");
+    let body = test::read_body(res).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+    assert!(body_str.contains("<title>Web Key Directory - Tester</title>"));
+    assert!(body_str.contains("InvalidEmailError"));
+}
+
+#[actix_web::test]
+async fn test_api_not_found() {
+    let app = test::init_service(
+        App::new()
+            .service(api)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get().uri("/not_found").to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+}
+
+#[actix_web::test]
+async fn test_api_no_email() {
+    let app = test::init_service(
+        App::new()
+            .service(api)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get().uri("/api/lookup").to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+    let body = test::read_body(res).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+    assert!(body_str.contains("Missing email parameter"));
+}
+
+#[actix_web::test]
+async fn test_api_email() {
+    let app = test::init_service(
+        App::new()
+            .service(api)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/api/lookup?email=something")
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(res.headers().get(CACHE_CONTROL).unwrap(), "no-store");
+    assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "application/json");
+    let body = test::read_body(res).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+    println!("API Response Body: {}", body_str);
+    assert_eq!(
+        body_str,
+        r#"{"user_id":"something","methods":[{"uri":"","key":null,"errors":[{"name":"InvalidEmailError","message":"User ID must be in the format '{local_part}@{domain_part}'"}],"method_type":"Direct","successes":[]},{"uri":"","key":null,"errors":[{"name":"InvalidEmailError","message":"User ID must be in the format '{local_part}@{domain_part}'"}],"method_type":"Advanced","successes":[]}]}"#
+    );
+}
+
+#[actix_web::test]
+async fn test_sitemap() {
+    let handlebars_ref = setup_handlebars();
+    let app = test::init_service(
+        App::new()
+            .app_data(handlebars_ref.clone())
+            .service(serve_sitemap)
+            .wrap(setup_error_handlers_middleware())
+            .wrap(setup_logging_middleware())
+            .wrap(setup_compression_middleware())
+            .wrap(setup_default_headers_middleware()),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/.well-known/sitemap.xml")
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(
+        res.headers().get(CACHE_CONTROL).unwrap(),
+        "public, max-age=604800"
+    );
+    assert_eq!(res.headers().get(CONTENT_TYPE).unwrap(), "application/xml");
+    let body = test::read_body(res).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+    println!("SitemapXML Response Body: {}", body_str);
+    assert_eq!(
+        body_str,
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n  xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9\r\n      http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd\">\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>1.00</priority>\r\n  </url>\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/api-docs/ui/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>0.80</priority>\r\n  </url>\r\n</urlset>"
+    );
+}
