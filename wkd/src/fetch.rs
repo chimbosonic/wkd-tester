@@ -5,6 +5,9 @@ use reqwest::Url;
 use miette::Diagnostic;
 use thiserror::Error;
 
+#[cfg(feature = "tracing")]
+use tracing::{Level, event};
+
 #[derive(Error, Diagnostic, Debug)]
 pub enum WkdFetchError {
     #[error("WKD URI provided is not a valid URL")]
@@ -67,10 +70,15 @@ pub struct WkdFetch {
 }
 
 impl WkdFetch {
+    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub async fn fetch(wkd_uri: &WkdUri) -> WkdFetch {
         let direct_method = fetch_uri(&wkd_uri.direct_uri).await;
+        #[cfg(feature = "tracing")]
+        event!(Level::TRACE, "Fetched Direct URI: {:?}", direct_method);
         let advanced_method = fetch_uri(&wkd_uri.advanced_uri).await;
 
+        #[cfg(feature = "tracing")]
+        event!(Level::TRACE, "Fetched Direct URI: {:?}", advanced_method);
         WkdFetch {
             direct_method,
             advanced_method,

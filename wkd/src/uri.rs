@@ -2,6 +2,9 @@ use sha1::{Digest, Sha1};
 use std::fmt::Display;
 use std::fmt::Formatter;
 
+#[cfg(feature = "tracing")]
+use tracing::{Level, event};
+
 /// Direct Method URI conforming to <https://datatracker.ietf.org/doc/html/draft-koch-openpgp-webkey-service-19#section-3.1-10>
 #[derive(Debug)]
 pub struct DirectUri(String);
@@ -146,12 +149,30 @@ pub struct WkdUri {
 }
 
 impl WkdUri {
+    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn new(user_id: &str) -> Result<WkdUri, WkdUriError> {
         let (local_part, domain_part) = parse_email(user_id)?;
-
+        #[cfg(feature = "tracing")]
+        event!(
+            Level::TRACE,
+            "Parsed email: local_part={}, domain_part={}",
+            local_part,
+            domain_part
+        );
         let user_hash = UserHash::new(local_part);
+        #[cfg(feature = "tracing")]
+        event!(
+            Level::TRACE,
+            "Generated UserHash for local_part: {:?}",
+            user_hash
+        );
+
         let advanced_uri = AdvancedUri::new(domain_part, local_part, &user_hash);
+        #[cfg(feature = "tracing")]
+        event!(Level::TRACE, "Generated AdvancedUri: {:?}", advanced_uri);
         let direct_uri = DirectUri::new(domain_part, local_part, &user_hash);
+        #[cfg(feature = "tracing")]
+        event!(Level::TRACE, "Generated DirectUri: {:?}", direct_uri);
 
         Ok(WkdUri {
             domain_part: domain_part.to_string(),

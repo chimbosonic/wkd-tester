@@ -9,6 +9,7 @@ const NVALUES: u8 = VALUES.len() as u8 - 1;
 
 type Field = [[u8; WIDTH]; HEIGHT];
 
+#[cfg_attr(feature = "tracing", tracing::instrument)]
 pub fn generate_randomart(
     fingerprint: &Fingerprint,
     key_algorithm: &str,

@@ -3,17 +3,19 @@ mod render;
 mod routes;
 mod wkd_result;
 
+#[cfg(feature = "otel")]
+mod telemetry;
+
 use actix_web::http::StatusCode;
 use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
 use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{App, HttpServer, Result, middleware, web};
+use config::SERVER_CONFIG;
 use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
 use routes::{ApiDoc, api, lookup, serve_sitemap};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-
-use config::SERVER_CONFIG;
 
 fn setup_handlebars() -> web::Data<Handlebars<'static>> {
     let mut handlebars = Handlebars::new();
@@ -51,6 +53,10 @@ fn setup_error_handlers_middleware<B: 'static>() -> middleware::ErrorHandlers<B>
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    #[cfg(feature = "otel")]
+    let _otel_guard = telemetry::init_tracing_subscriber();
+
+    #[cfg(not(feature = "otel"))]
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let host = SERVER_CONFIG.host;

@@ -5,6 +5,7 @@ use pgp::{
     types::{KeyDetails, KeyVersion},
 };
 
+#[derive(Debug)]
 pub struct Fingerprint {
     pub fingerprint: Vec<u8>,
     pub algorithm: String,
@@ -24,6 +25,7 @@ impl Fingerprint {
         self.fingerprint.as_slice()
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn new(pub_key: &SignedPublicKey) -> Self {
         let fingerprint = pub_key.fingerprint().as_bytes().to_vec();
 

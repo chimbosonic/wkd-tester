@@ -32,7 +32,7 @@ use utoipa::OpenApi;
 )]
 pub struct ApiDoc;
 
-#[derive(Deserialize, utoipa::IntoParams)]
+#[derive(Deserialize, utoipa::IntoParams, Debug)]
 struct FormData {
     /// Email address to lookup in WKD
     email: Option<String>,
@@ -49,6 +49,7 @@ struct FormData {
     tag = "WKD Lookup"
 )]
 #[get("/api/lookup")]
+#[cfg_attr(feature = "otel", tracing::instrument)]
 pub async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
     let email = match &form.email {
         Some(email) => email,
@@ -66,6 +67,7 @@ pub async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
 }
 
 #[get("/")]
+#[cfg_attr(feature = "otel", tracing::instrument)]
 pub async fn lookup(form: web::Query<FormData>, hb: web::Data<Handlebars<'_>>) -> HttpResponse {
     let wkd_result = match &form.email {
         Some(email) => Some(wkd_result::get_wkd(email).await),
@@ -91,6 +93,7 @@ pub async fn lookup(form: web::Query<FormData>, hb: web::Data<Handlebars<'_>>) -
 }
 
 #[get("/.well-known/sitemap.xml")]
+#[cfg_attr(feature = "otel", tracing::instrument)]
 pub async fn serve_sitemap(hb: web::Data<Handlebars<'_>>) -> HttpResponse {
     let mut response = render(hb, "sitemap", &None);
     response.headers_mut().insert(

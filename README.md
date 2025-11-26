@@ -107,3 +107,13 @@ Then run it with:
 ```bash
 docker run -it --rm -p 7070:7070 wkd-tester
 ```
+
+## Tracing
+To enable tracing for the `wkd` library run the server with the following:
+```bash
+export RUST_LOG="info,wkd=trace"; cargo watch -x run --features otel
+```
+and in another terminal:
+```bash
+docker run  -p 4317:4317 -p 16686:16686 jaegertracing/all-in-one:latest
+```

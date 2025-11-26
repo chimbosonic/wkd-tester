@@ -16,6 +16,10 @@ anyhow = "1.0.100"
 pgp = "0.17.0"
 chrono = "0.4.42"
 hex = "0.4.3"
+tracing = { version = "0.1.41", optional = true}
 
 [dev-dependencies]
 mockito = "1.7.0"
+
+[features]
+tracing = ["dep:tracing"]

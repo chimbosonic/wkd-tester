@@ -26,6 +26,7 @@ pub struct WkdKey {
     pub randomart: String,
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument)]
 pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
     let pub_key = match SignedPublicKey::from_bytes(std::io::Cursor::new(data)) {
         Ok(key) => key,
