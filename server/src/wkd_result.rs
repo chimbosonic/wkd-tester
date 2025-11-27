@@ -1,19 +1,19 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub enum WkdMethodType {
     Direct,
     Advanced,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct WkdResult {
     user_id: String,
     methods: Vec<WkdUriResult>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct WkdUriResult {
     uri: String,
     key: Option<WkdKey>,
@@ -49,13 +49,13 @@ impl From<&WkdFetchSuccess> for WkdSuccess {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct WkdError {
     name: String,
     message: String,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct WkdKey {
     fingerprint: String,
     revocation_status: String,
@@ -205,20 +205,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_wkd() {
-        let wkd_result = get_wkd("test@dp42.dev").await;
-        assert_eq!(wkd_result.user_id, "test@dp42.dev");
+        let wkd_result = get_wkd("test@chimbosonic.com").await;
+        println!("{:#?}", wkd_result);
+        assert_eq!(wkd_result.user_id, "test@chimbosonic.com");
         assert_eq!(
             wkd_result.methods.as_slice()[0].uri,
-            "https://dp42.dev/.well-known/openpgpkey/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
+            "https://chimbosonic.com/.well-known/openpgpkey/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
         );
         assert_eq!(
             wkd_result.methods.as_slice()[1].uri,
-            "https://openpgpkey.dp42.dev/.well-known/openpgpkey/dp42.dev/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
+            "https://openpgpkey.chimbosonic.com/.well-known/openpgpkey/chimbosonic.com/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
         );
         assert!(wkd_result.methods.as_slice()[0].key.is_none());
         assert!(wkd_result.methods.as_slice()[1].key.is_none());
-        assert_eq!(wkd_result.methods.as_slice()[1].errors.len(), 3);
-        assert_eq!(wkd_result.methods.as_slice()[0].errors.len(), 3);
+        assert_eq!(wkd_result.methods.as_slice()[1].errors.len(), 2);
+        assert_eq!(wkd_result.methods.as_slice()[0].errors.len(), 2);
         println!("{:?}", wkd_result.methods.as_slice()[0].successes);
 
         assert_eq!(
