@@ -11,17 +11,36 @@ use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
 use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{App, HttpServer, Result, middleware, web};
 use config::SERVER_CONFIG;
-use handlebars::DirectorySourceOptions;
 use handlebars::Handlebars;
 use routes::{ApiDoc, api, lookup, serve_sitemap};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+#[cfg(not(feature = "embed-static"))]
+use handlebars::DirectorySourceOptions;
+
 fn setup_handlebars() -> web::Data<Handlebars<'static>> {
     let mut handlebars = Handlebars::new();
-    handlebars
-        .register_templates_directory("./static/", DirectorySourceOptions::default())
-        .unwrap();
+
+    #[cfg(feature = "embed-static")]
+    {
+        log::info!("Using embedded static templates");
+        handlebars
+            .register_template_string("index", config::INDEX_HBS)
+            .unwrap();
+        handlebars
+            .register_template_string("sitemap", config::SITEMAP_HBS)
+            .unwrap();
+    }
+
+    #[cfg(not(feature = "embed-static"))]
+    {
+        log::info!("Using filesystem templates from ./static/ directory");
+        handlebars
+            .register_templates_directory("./static/", DirectorySourceOptions::default())
+            .unwrap();
+    }
+
     web::Data::new(handlebars)
 }
 
@@ -66,8 +85,8 @@ async fn main() -> std::io::Result<()> {
 
     let openapi = ApiDoc::openapi();
 
-    println!("Starting server on http://{host}:{port}");
-    println!("Swagger UI available at http://{host}:{port}/api-docs/ui/");
+    log::info!("Starting server on http://{host}:{port}");
+    log::info!("Swagger UI available at http://{host}:{port}/api-docs/ui/");
     HttpServer::new(move || {
         App::new()
             .app_data(handlebars_ref.clone())

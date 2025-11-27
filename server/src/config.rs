@@ -32,3 +32,9 @@ pub static SERVER_CONFIG: ServerConfig = ServerConfig {
     host: "0.0.0.0",
     port: 7070,
 };
+
+#[cfg(feature = "embed-static")]
+pub static INDEX_HBS: &str = include_str!("../static/index.hbs");
+
+#[cfg(feature = "embed-static")]
+pub static SITEMAP_HBS: &str = include_str!("../static/sitemap.hbs");
