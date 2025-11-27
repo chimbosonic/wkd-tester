@@ -13,6 +13,6 @@ opt-level = 3
 [profile.release]
 opt-level = 3
 debug = false
-strip = "debuginfo"
+strip = "symbols"
 lto = true
 panic = "abort"
