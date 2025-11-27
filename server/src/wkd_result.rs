@@ -205,15 +205,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_wkd() {
-        let wkd_result = get_wkd("Joe.Doe@example.org").await;
-        assert_eq!(wkd_result.user_id, "Joe.Doe@example.org");
+        let wkd_result = get_wkd("test@dp42.dev").await;
+        assert_eq!(wkd_result.user_id, "test@dp42.dev");
         assert_eq!(
             wkd_result.methods.as_slice()[0].uri,
-            "https://example.org/.well-known/openpgpkey/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
+            "https://dp42.dev/.well-known/openpgpkey/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
         );
         assert_eq!(
             wkd_result.methods.as_slice()[1].uri,
-            "https://openpgpkey.example.org/.well-known/openpgpkey/example.org/hu/iy9q119eutrkn8s1mk4r39qejnbu3n5q?l=Joe.Doe"
+            "https://openpgpkey.dp42.dev/.well-known/openpgpkey/dp42.dev/hu/iffe93qcsgp4c8ncbb378rxjo6cn9q6u?l=test"
         );
         assert!(wkd_result.methods.as_slice()[0].key.is_none());
         assert!(wkd_result.methods.as_slice()[1].key.is_none());

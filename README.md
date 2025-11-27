@@ -111,6 +111,7 @@ docker run -it --rm -p 7070:7070 wkd-tester
 ## Tracing
 To enable tracing for the `wkd` library run the server with the following:
 ```bash
+cd server/
 export RUST_LOG="info,wkd=trace"; cargo watch -x run --features otel
 ```
 and in another terminal:
