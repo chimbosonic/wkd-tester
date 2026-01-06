@@ -2,7 +2,7 @@ use bytes::Bytes;
 use chrono::{self};
 use miette::Diagnostic;
 use pgp::composed::{Deserializable, SignedPublicKey};
-use pgp::types::KeyDetails;
+use pgp::types::{KeyDetails, PublicKeyTrait};
 use thiserror::Error;
 
 mod fingerprint;
@@ -24,6 +24,21 @@ pub struct WkdKey {
     pub expiry: String,
     pub algorithm: String,
     pub randomart: String,
+}
+
+/// https://github.com/rpgp/rpgp/commit/0f58ea1cec37ca271282917d8df81fcf599f365f removed expires_at from SignedPublicKey
+/// so we re-implement it here following the same logic as before.
+fn expires_at(key: &SignedPublicKey) -> Option<chrono::DateTime<chrono::Utc>> {
+    let expiration = key
+        .details
+        .users
+        .iter()
+        .flat_map(|user| &user.signatures)
+        .filter_map(|sig| sig.key_expiration_time())
+        .max()
+        .cloned()?;
+
+    Some(*key.primary_key.created_at() + expiration)
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument)]
@@ -48,7 +63,7 @@ pub fn load_key(data: Bytes) -> Result<WkdKey, WkdLoadError> {
         Ok(_) => "Not as far as we know".to_string(),
     };
 
-    let expiry = match pub_key.expires_at() {
+    let expiry = match expires_at(&pub_key) {
         Some(date) => {
             if date < chrono::Utc::now() {
                 format!("Expired on {}", date)

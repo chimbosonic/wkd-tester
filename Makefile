@@ -1,5 +1,5 @@
 watch-server:
-	cd server && cargo watch -x run
+	cargo watch -x "run --bin wkd-tester-server"
 
 test-cli-success:
 	cargo run --package wkd-tester-cli -- --user-id "alexis.lowe@chimbosonic.com"
