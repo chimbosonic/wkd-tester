@@ -24,7 +24,7 @@ pub static STATIC_CONTENT_CONFIG: StaticContentConfig = StaticContentConfig {
     footer_hoster_url: "https://chimbosonic.com",
     footer_hoster_name: "Alexis Lowe",
     base_url: "https://wkd.dp42.dev",
-    root_path: "/wkd",
+    root_path: "",
 };
 
 /// Make sure to update this with your information if you are self hosting.
