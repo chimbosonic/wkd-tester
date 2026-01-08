@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description"
         content="A web-based tool for testing and debugging the OpenPGP Web Key Directory (WKD) protocol" />
-    <link rel="canonical" href="{{this.sitemap.base_url}}/"/>    
+    <link rel="canonical" href="https://wkd.dp42.dev/"/>
     <title>Web Key Directory - Tester</title>
     <style>
         :root {
@@ -406,22 +406,19 @@
             <h2 class="section-title">API usage</h2>
             <p class="subtitle">
                 There is also an API that returns the same results in JSON format, its endpoint is:
-                <a href="/api/lookup?email=Joe.Doe@example.org"
-                    style="color:var(--accent-2)">/api/lookup?email=Joe.Doe@example.org</a>
+                <a href="{{this.config.root_path}}/api/lookup?email=Joe.Doe@example.org"
+                    style="color:var(--accent-2)">{{this.config.root_path}}/api/lookup?email=Joe.Doe@example.org</a>
             <p class="subtitle">
-                You can find the OpenAPI specification and Swagger UI at <a href="/api-docs/ui/"
-                    style="color:var(--accent-2)">/api-docs/ui/</a></p>
+                You can find the OpenAPI specification and Swagger UI at <a href="{{this.config.root_path}}/api-docs/ui/"
+                    style="color:var(--accent-2)">{{this.config.root_path}}/api-docs/ui/</a></p>
 
         </section>
         <footer style="margin-top:16px;">
             <p>
-                Hosted by <a href="{{this.footer.host_url}}" style="color:var(--accent-2)">{{this.footer.host_name}}</a>
-                <script src="https://liberapay.com/{{this.footer.libera_pay_user}}/widgets/button.js"></script>
-                <noscript><a href="https://liberapay.com/{{this.footer.libera_pay_user}}/donate"><img
-                            alt="Donate using Liberapay"
-                            src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
-                - Source code
-                available on <a href="https://github.com/chimbosonic/wkd-tester"
+                Hosted by <a href="{{this.config.footer_hoster_url}}" style="color:var(--accent-2)">{{this.config.footer_hoster_name}}</a>
+                - Developed by <a href="https://chimbosonic.com"
+                    style="color:var(--accent-2)">Alexis Lowe</a>
+                - Source code available on <a href="https://github.com/chimbosonic/wkd-tester"
                     style="color:var(--accent-2)">GitHub</a>
             </p>
             <div class="note">

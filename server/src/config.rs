@@ -1,33 +1,33 @@
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]
-pub struct FooterData {
-    pub host_url: &'static str,
-    pub host_name: &'static str,
-    pub libera_pay_user: &'static str,
-}
-
-#[derive(Clone, Serialize)]
-pub struct SiteMapData {
+pub struct StaticContentConfig {
+    /// URL to your website used in the footer
+    pub footer_hoster_url: &'static str,
+    /// Your name or organization name used in the footer
+    pub footer_hoster_name: &'static str,
+    /// The base URL ie: protocol://host
     pub base_url: &'static str,
+    /// This sets the path used in static content. Path must start with a slash but not end with a slash. For `/` use `""`.
+    pub root_path: &'static str,
 }
 
 pub struct ServerConfig {
+    /// The host address to bind to.
     pub host: &'static str,
+    /// The port to bind to.
     pub port: u16,
 }
 
 /// Make sure to update this with your information if you are self hosting.
-pub static FOOTER_DATA: FooterData = FooterData {
-    host_url: "https://chimbosonic.com",
-    host_name: "Alexis Lowe",
-    libera_pay_user: "chimbosonic",
-};
-
-pub static SITEMAP_DATA: SiteMapData = SiteMapData {
+pub static STATIC_CONTENT_CONFIG: StaticContentConfig = StaticContentConfig {
+    footer_hoster_url: "https://chimbosonic.com",
+    footer_hoster_name: "Alexis Lowe",
     base_url: "https://wkd.dp42.dev",
+    root_path: "/wkd",
 };
 
+/// Make sure to update this with your information if you are self hosting.
 pub static SERVER_CONFIG: ServerConfig = ServerConfig {
     host: "0.0.0.0",
     port: 7070,

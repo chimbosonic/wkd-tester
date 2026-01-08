@@ -5,12 +5,11 @@ use serde::Serialize;
 
 use crate::wkd_result::WkdResult;
 
-use crate::config::{FOOTER_DATA, FooterData, SITEMAP_DATA, SiteMapData};
+use crate::config::{STATIC_CONTENT_CONFIG, StaticContentConfig};
 
 #[derive(Serialize)]
 struct RenderData<'a, T> {
-    footer: FooterData,
-    sitemap: SiteMapData,
+    config: StaticContentConfig,
     data: &'a T,
 }
 
@@ -20,8 +19,7 @@ pub fn render(
     data: &Option<WkdResult>,
 ) -> HttpResponse {
     let render_data = RenderData {
-        footer: FOOTER_DATA.clone(),
-        sitemap: SITEMAP_DATA.clone(),
+        config: STATIC_CONTENT_CONFIG.clone(),
         data,
     };
 

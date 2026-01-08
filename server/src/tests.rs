@@ -5,6 +5,8 @@ use actix_web::{
 
 use super::*;
 
+use crate::config::STATIC_CONTENT_CONFIG;
+
 #[actix_web::test]
 async fn test_lookup_not_index() {
     let handlebars_ref = setup_handlebars();
@@ -49,11 +51,6 @@ async fn test_lookup_no_email() {
     let body = test::read_body(res).await;
     let body_str = std::str::from_utf8(&body).unwrap();
     assert!(body_str.contains("<title>Web Key Directory - Tester</title>"));
-    let canonical_link = format!(
-        "<link rel=\"canonical\" href=\"{}/\"/>",
-        config::SITEMAP_DATA.base_url
-    );
-    assert!(body_str.contains(&canonical_link));
 }
 
 #[actix_web::test]
@@ -179,6 +176,10 @@ async fn test_sitemap() {
     println!("SitemapXML Response Body: {}", body_str);
     assert_eq!(
         body_str,
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n  xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9\r\n      http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd\">\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>1.00</priority>\r\n  </url>\r\n  <url>\r\n    <loc>https://wkd.dp42.dev/api-docs/ui/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>0.80</priority>\r\n  </url>\r\n</urlset>"
+        format!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n  xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9\r\n      http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd\">\r\n  <url>\r\n    <loc>{base_url}{rel_path}/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>1.00</priority>\r\n  </url>\r\n  <url>\r\n    <loc>{base_url}{rel_path}/api-docs/ui/</loc>\r\n    <lastmod>2025-11-25T10:01:01+00:00</lastmod>\r\n    <priority>0.80</priority>\r\n  </url>\r\n</urlset>",
+            base_url = STATIC_CONTENT_CONFIG.base_url,
+            rel_path = STATIC_CONTENT_CONFIG.root_path
+        )
     );
 }

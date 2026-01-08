@@ -98,7 +98,19 @@ wkd_fetch
 
 ## Server: Usage
 
-Clone the repo, make sure to update `server/src/config.rs` and then build the server container:
+Clone the repo, make sure to update `server/src/config.rs`
+
+### CAUTION
+
+- `root_path` does **not** change server routing. It only affects paths referenced in generated/static content.
+- `root_path` must **not** end with `/`.
+  - Use `""` for the site root.
+  - If you proxy the server under a subpath (e.g. `https://example.org/wkd`), set `root_path` to `/wkd`.
+
+**Swagger UI note:** If `root_path != ""`, the Swagger UI page will break because it hardcodes `/api-docs/openapi.json`. I wasn’t able to get `utoipa` to change the path used in the frontend.
+
+
+and then build the server container:
 ```bash
 docker build -t wkd-tester .
 ```
