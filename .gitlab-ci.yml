@@ -1,57 +1,86 @@
 image: rust:latest
 
 stages:
-  - lint
-  - test
-  - build
+    - lint
+    - test
+    - build
+    - publish
 
 variables:
-  FF_USE_FASTZIP: "true"
-  CACHE_COMPRESSION_LEVEL: "fastest"
+    FF_USE_FASTZIP: "true"
+    CACHE_COMPRESSION_LEVEL: "fastest"
 
 lint:
-  stage: lint
-  cache:
-    key:
-      files:
-        - Cargo.lock
-    paths:
-      - target/
-  script:
-    - rustc --version && cargo --version
-    - rustup component add rustfmt
-    - rustup component add clippy
-    - cargo fmt --all -- --check
-    - cargo clippy -- -D warnings
+    stage: lint
+    cache:
+        key:
+            files:
+                - Cargo.lock
+        paths:
+            - target/
+    script:
+        - rustc --version && cargo --version
+        - rustup component add rustfmt
+        - rustup component add clippy
+        - cargo fmt --all -- --check
+        - cargo clippy -- -D warnings
 
 test:
-  stage: test
-  cache:
-    key:
-      files:
-        - Cargo.lock
-    paths:
-      - target/
-  script:
-    - rustc --version && cargo --version
-    - cargo test --all-features
+    stage: test
+    cache:
+        key:
+            files:
+                - Cargo.lock
+        paths:
+            - target/
+    script:
+        - rustc --version && cargo --version
+        - cargo test --all-features
 
 build-oci:
-  stage: build
-  image: docker:28-cli
-  services:
-    - docker:28-dind
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  variables:
-    IMAGE_TAG: "$CI_REGISTRY_IMAGE/wkd-tester-server"
-    IMAGE_TAG_SHA: "$IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
-    IMAGE_TAG_LATEST: "$IMAGE_TAG:latest"
-  before_script:
-    - docker info
-    - echo "Logging into GitLab Container Registry; $CI_REGISTRY $CI_REGISTRY_USER "
-    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
-  script:
-    - docker build -t ${IMAGE_TAG_SHA} .
-    - docker tag ${IMAGE_TAG_SHA} ${IMAGE_TAG_LATEST}
-    - docker push -a ${IMAGE_TAG}
+    stage: build
+    image: docker:28-cli
+    services:
+        - docker:28-dind
+    rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    variables:
+        IMAGE_TAG: "$CI_REGISTRY_IMAGE/wkd-tester-server"
+        IMAGE_TAG_SHA: "$IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
+        IMAGE_TAG_LATEST: "$IMAGE_TAG:latest"
+    before_script:
+        - docker info
+        - echo "Logging into GitLab Container Registry; $CI_REGISTRY $CI_REGISTRY_USER "
+        - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+    script:
+        - docker build -t ${IMAGE_TAG_SHA} .
+        - docker tag ${IMAGE_TAG_SHA} ${IMAGE_TAG_LATEST}
+        - docker push -a ${IMAGE_TAG}
+
+publish-oci:
+    stage: publish
+    image:
+        name: quay.io/skopeo/stable:latest
+        entrypoint: [""]
+    rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    variables:
+        LOCAL_IMAGE_TAG: "$CI_REGISTRY_IMAGE/wkd-tester-server"
+        LOCAL_IMAGE_TAG_SHA: "$LOCAL_IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
+        LOCAL_IMAGE_TAG_LATEST: "$LOCAL_IMAGE_TAG:latest"
+
+        QUAY_IMAGE_TAG: "quay.io/chimbosonic/wkd-tester"
+        QUAY_IMAGE_TAG_SHA: "$QUAY_IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
+        QUAY_IMAGE_TAG_LATEST: "$QUAY_IMAGE_TAG:latest"
+
+        DOCKER_IMAGE_TAG: "docker.io/chimbosonic/wkd-tester"
+        DOCKER_IMAGE_TAG_SHA: "$DOCKER_IMAGE_TAG:${CI_COMMIT_SHORT_SHA}"
+        DOCKER_IMAGE_TAG_LATEST: "$DOCKER_IMAGE_TAG:latest"
+    script:
+        # Copy image to Quay.io
+        - skopeo copy --dest-creds $QUAY_USER:$QUAY_TOKEN docker://$LOCAL_IMAGE_TAG_LATEST docker://$QUAY_IMAGE_TAG_SHA
+        - skopeo copy --dest-creds $QUAY_USER:$QUAY_TOKEN docker://$LOCAL_IMAGE_TAG_LATEST docker://$QUAY_IMAGE_TAG_LATEST
+
+        # Copy image to Docker Hub
+        - skopeo copy --dest-creds $DOCKER_USER:$DOCKER_TOKEN docker://$LOCAL_IMAGE_TAG_LATEST docker://$DOCKER_IMAGE_TAG_SHA
+        - skopeo copy --dest-creds $DOCKER_USER:$DOCKER_TOKEN docker://$LOCAL_IMAGE_TAG_LATEST docker://$DOCKER_IMAGE_TAG_LATEST
