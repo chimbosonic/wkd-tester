@@ -1,0 +1,21 @@
+name: build
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    schedule:
+        # Build the image every Sunday
+        - cron: "0 0 * * 0"
+
+jobs:
+    build-sign-publish:
+        uses: chimbosonic/container-build-tools/.github/workflows/build-publish-container-resuable-workflow.yml@main
+        with:
+            image-name: wkd-tester
+            image-repo-name: chimbosonic
+            image-author: Alexis Lowe <alexis.lowe@chimbosonic.com>
+            image-description: Web-based tool for testing and debugging OpenPGP Web Key Directory (WKD)
+            image-documentation: https://github.com/chimbosonic/wkd-tester/blob/master/README.md
+            image-platforms: linux/amd64, linux/arm64
+        secrets: inherit
