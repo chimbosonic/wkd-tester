@@ -1,5 +1,6 @@
 use super::uri::{Uri, WkdUri};
 use bytes::Bytes;
+use chrono::{DateTime, Utc};
 use reqwest::Url;
 
 use miette::Diagnostic;
@@ -91,6 +92,7 @@ pub struct WkdFetchUriResult {
     pub errors: Vec<WkdFetchError>,
     pub successes: Vec<WkdFetchSuccess>,
     pub data: Option<Bytes>,
+    pub timestamp: DateTime<Utc>,
 }
 
 fn trim_uri(url: &str) -> &str {
@@ -158,6 +160,7 @@ async fn fetch_uri<T>(
         errors: Vec::new(),
         successes: Vec::new(),
         data: None,
+        timestamp: Utc::now(),
     };
 
     let url = match Url::parse(&uri.to_string()) {
@@ -230,6 +233,7 @@ async fn fetch_uri<T>(
 mod tests {
     use super::super::uri::UserHash;
     use super::*;
+    use chrono::TimeDelta;
     use mockito::ServerGuard;
     use std::fmt::{Display, Formatter};
 
@@ -319,6 +323,7 @@ mod tests {
         let result = fetch_uri(&test_uri).await;
         assert_eq!(result.errors.len(), 0);
         assert!(result.data.is_some());
+        assert!(result.timestamp - Utc::now() < TimeDelta::seconds(10));
         mock_server.reset();
     }
 

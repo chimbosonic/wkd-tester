@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -20,6 +21,8 @@ pub struct WkdUriResult {
     errors: Vec<WkdError>,
     method_type: WkdMethodType,
     successes: Vec<WkdSuccess>,
+    #[schema(value_type = String)]
+    timestamp: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, ToSchema, Clone)]
@@ -111,6 +114,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
                         errors: vec![WkdError::from(&err)],
                         method_type: WkdMethodType::Direct,
                         successes: vec![],
+                        timestamp: Utc::now(),
                     },
                     WkdUriResult {
                         uri: "".to_string(),
@@ -118,6 +122,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
                         errors: vec![WkdError::from(&err)],
                         method_type: WkdMethodType::Advanced,
                         successes: vec![],
+                        timestamp: Utc::now(),
                     },
                 ],
             };
@@ -160,6 +165,7 @@ impl WkdUriResult {
             errors: wkd_fetch.errors.iter().map(WkdError::from).collect(),
             successes: wkd_fetch.successes.iter().map(WkdSuccess::from).collect(),
             method_type,
+            timestamp: wkd_fetch.timestamp,
         }
     }
 }
@@ -188,6 +194,7 @@ impl WkdKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[test]
     fn test_wkd_key_from() {
@@ -223,6 +230,7 @@ mod tests {
             successes: vec![],
             errors: vec![wkd::fetch::WkdFetchError::AccessControlAllowOriginNotStar],
             data: None,
+            timestamp: Utc::now(),
         };
         let wkd_uri_result = WkdUriResult::from(wkd_fetch, "uri", WkdMethodType::Direct);
         assert!(wkd_uri_result.key.is_none());
