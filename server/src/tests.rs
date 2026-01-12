@@ -29,16 +29,22 @@ async fn test_lookup_not_index() {
 #[actix_web::test]
 async fn test_lookup_no_email() {
     let handlebars_ref = setup_handlebars();
-    let app = test::init_service(
-        App::new()
-            .app_data(handlebars_ref.clone())
-            .service(lookup)
-            .wrap(setup_error_handlers_middleware())
-            .wrap(setup_logging_middleware())
-            .wrap(setup_compression_middleware())
-            .wrap(setup_default_headers_middleware()),
-    )
-    .await;
+
+    let app = App::new()
+        .app_data(handlebars_ref.clone())
+        .service(lookup)
+        .wrap(setup_error_handlers_middleware())
+        .wrap(setup_logging_middleware())
+        .wrap(setup_compression_middleware())
+        .wrap(setup_default_headers_middleware());
+
+    #[cfg(feature = "wkdcache")]
+    let app = {
+        let cache = setup_cache();
+        app.app_data(cache.clone())
+    };
+
+    let app = test::init_service(app).await;
 
     let req = test::TestRequest::get().uri("/").to_request();
     let res = test::call_service(&app, req).await;
@@ -56,16 +62,21 @@ async fn test_lookup_no_email() {
 #[actix_web::test]
 async fn test_lookup_email() {
     let handlebars_ref = setup_handlebars();
-    let app = test::init_service(
-        App::new()
-            .app_data(handlebars_ref.clone())
-            .service(lookup)
-            .wrap(setup_error_handlers_middleware())
-            .wrap(setup_logging_middleware())
-            .wrap(setup_compression_middleware())
-            .wrap(setup_default_headers_middleware()),
-    )
-    .await;
+    let app = App::new()
+        .app_data(handlebars_ref.clone())
+        .service(lookup)
+        .wrap(setup_error_handlers_middleware())
+        .wrap(setup_logging_middleware())
+        .wrap(setup_compression_middleware())
+        .wrap(setup_default_headers_middleware());
+
+    #[cfg(feature = "wkdcache")]
+    let app = {
+        let cache = setup_cache();
+        app.app_data(cache.clone())
+    };
+
+    let app = test::init_service(app).await;
 
     let req = test::TestRequest::get()
         .uri("/?email=something")
@@ -100,15 +111,20 @@ async fn test_api_not_found() {
 
 #[actix_web::test]
 async fn test_api_no_email() {
-    let app = test::init_service(
-        App::new()
-            .service(api)
-            .wrap(setup_error_handlers_middleware())
-            .wrap(setup_logging_middleware())
-            .wrap(setup_compression_middleware())
-            .wrap(setup_default_headers_middleware()),
-    )
-    .await;
+    let app = App::new()
+        .service(api)
+        .wrap(setup_error_handlers_middleware())
+        .wrap(setup_logging_middleware())
+        .wrap(setup_compression_middleware())
+        .wrap(setup_default_headers_middleware());
+
+    #[cfg(feature = "wkdcache")]
+    let app = {
+        let cache = setup_cache();
+        app.app_data(cache.clone())
+    };
+
+    let app = test::init_service(app).await;
 
     let req = test::TestRequest::get().uri("/api/lookup").to_request();
     let res = test::call_service(&app, req).await;
@@ -121,15 +137,20 @@ async fn test_api_no_email() {
 
 #[actix_web::test]
 async fn test_api_email() {
-    let app = test::init_service(
-        App::new()
-            .service(api)
-            .wrap(setup_error_handlers_middleware())
-            .wrap(setup_logging_middleware())
-            .wrap(setup_compression_middleware())
-            .wrap(setup_default_headers_middleware()),
-    )
-    .await;
+    let app = App::new()
+        .service(api)
+        .wrap(setup_error_handlers_middleware())
+        .wrap(setup_logging_middleware())
+        .wrap(setup_compression_middleware())
+        .wrap(setup_default_headers_middleware());
+
+    #[cfg(feature = "wkdcache")]
+    let app = {
+        let cache = setup_cache();
+        app.app_data(cache.clone())
+    };
+
+    let app = test::init_service(app).await;
 
     let req = test::TestRequest::get()
         .uri("/api/lookup?email=something")

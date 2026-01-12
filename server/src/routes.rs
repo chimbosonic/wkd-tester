@@ -1,3 +1,6 @@
+#[cfg(feature = "wkdcache")]
+use crate::WebCache;
+
 use crate::render;
 use crate::wkd_result;
 use actix_web::error::ErrorBadRequest;
@@ -50,7 +53,10 @@ struct FormData {
 )]
 #[get("/api/lookup")]
 #[cfg_attr(feature = "otel", tracing::instrument)]
-pub async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
+pub async fn api(
+    form: web::Query<FormData>,
+    #[cfg(feature = "wkdcache")] cache: web::Data<WebCache>,
+) -> Result<impl Responder> {
     let email = match &form.email {
         Some(email) => email,
         None => {
@@ -58,36 +64,60 @@ pub async fn api(form: web::Query<FormData>) -> Result<impl Responder> {
         }
     };
 
+    #[cfg(feature = "wkdcache")]
+    let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
+
+    #[cfg(not(feature = "wkdcache"))]
     let result = wkd_result::get_wkd(email).await;
+
     let result = web::Json(result)
         .customize()
         .insert_header((CACHE_CONTROL, "no-store"));
+
+    #[cfg(feature = "wkdcache")]
+    wkd_result::unwrap_cache_future(cache_set_future).await;
 
     Ok(result)
 }
 
 #[get("/")]
 #[cfg_attr(feature = "otel", tracing::instrument)]
-pub async fn lookup(form: web::Query<FormData>, hb: web::Data<Handlebars<'_>>) -> HttpResponse {
-    let wkd_result = match &form.email {
-        Some(email) => Some(wkd_result::get_wkd(email).await),
-        None => None,
+pub async fn lookup(
+    form: web::Query<FormData>,
+    hb: web::Data<Handlebars<'_>>,
+    #[cfg(feature = "wkdcache")] cache: web::Data<WebCache>,
+) -> HttpResponse {
+    let email = match &form.email {
+        Some(email) => email,
+        None => {
+            let mut response = render(hb, "index", &None);
+            response.headers_mut().insert(
+                CACHE_CONTROL,
+                HeaderValue::from_static("public, max-age=604800"),
+            );
+            response
+                .headers_mut()
+                .insert(CONTENT_TYPE, HeaderValue::from_static("text/html"));
+            return response;
+        }
     };
 
-    let control_header = match &form.email {
-        Some(_) => "no-store",
-        None => "public, max-age=604800",
-    };
+    #[cfg(feature = "wkdcache")]
+    let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
 
-    let mut response = render(hb, "index", &wkd_result);
+    #[cfg(not(feature = "wkdcache"))]
+    let result = wkd_result::get_wkd(email).await;
 
+    let mut response = render(hb, "index", &Some(result));
     response
         .headers_mut()
-        .insert(CACHE_CONTROL, HeaderValue::from_static(control_header));
-
+        .insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
     response
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static("text/html"));
+
+    #[cfg(feature = "wkdcache")]
+    wkd_result::unwrap_cache_future(cache_set_future).await;
 
     response
 }

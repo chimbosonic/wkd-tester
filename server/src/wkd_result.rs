@@ -1,19 +1,19 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub enum WkdMethodType {
     Direct,
     Advanced,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub struct WkdResult {
     user_id: String,
     methods: Vec<WkdUriResult>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub struct WkdUriResult {
     uri: String,
     key: Option<WkdKey>,
@@ -22,7 +22,7 @@ pub struct WkdUriResult {
     successes: Vec<WkdSuccess>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, ToSchema, Clone)]
 pub struct WkdSuccess(String);
 
 use wkd::fetch::WkdFetchSuccess;
@@ -49,19 +49,53 @@ impl From<&WkdFetchSuccess> for WkdSuccess {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub struct WkdError {
     name: String,
     message: String,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 pub struct WkdKey {
     fingerprint: String,
     revocation_status: String,
     expiry: String,
     algorithm: String,
     randomart: String,
+}
+
+#[cfg(feature = "wkdcache")]
+pub async fn get_wkd_cached(
+    email: &String,
+    cache: &actix_web::web::Data<crate::WebCache>,
+) -> (
+    WkdResult,
+    Option<impl Future<Output = Result<(), crate::cache::CacheError>>>,
+) {
+    match cache.get(email).await {
+        Ok(Some(result)) => (result.data, None),
+        Ok(None) => {
+            let res = get_wkd(email).await;
+            let cache_set_future = cache.set(email.to_string(), res.clone());
+            (res, Some(cache_set_future))
+        }
+        Err(err) => {
+            log::error!("Failed to get email from cache: {}", err);
+            let res = get_wkd(email).await;
+            (res, None)
+        }
+    }
+}
+
+#[cfg(feature = "wkdcache")]
+pub async fn unwrap_cache_future(
+    cache_set_future: Option<impl Future<Output = Result<(), crate::cache::CacheError>>>,
+) {
+    if let Some(fut) = cache_set_future
+        && let Err(err) = fut.await
+    {
+        log::error!("Failed to set email in cache: {}", err);
+    }
 }
 
 pub async fn get_wkd(user_id: &str) -> WkdResult {

@@ -6,6 +6,15 @@ mod wkd_result;
 #[cfg(feature = "otel")]
 mod telemetry;
 
+#[cfg(feature = "wkdcache")]
+mod cache;
+
+#[cfg(feature = "wkdcache")]
+use {
+    crate::{cache::Cache, wkd_result::WkdResult},
+    std::time::Duration,
+};
+
 use actix_web::http::StatusCode;
 use actix_web::http::header::{CACHE_CONTROL, HeaderValue};
 use actix_web::middleware::ErrorHandlerResponse;
@@ -70,6 +79,16 @@ fn setup_error_handlers_middleware<B: 'static>() -> middleware::ErrorHandlers<B>
         .handler(StatusCode::BAD_REQUEST, add_error_header)
 }
 
+#[cfg(feature = "wkdcache")]
+type WebCache = Cache<String, WkdResult>;
+
+#[cfg(feature = "wkdcache")]
+fn setup_cache() -> web::Data<WebCache> {
+    let time_to_live = Duration::from_secs(10);
+
+    web::Data::new(WebCache::new(time_to_live))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     #[cfg(feature = "otel")]
@@ -77,6 +96,9 @@ async fn main() -> std::io::Result<()> {
 
     #[cfg(not(feature = "otel"))]
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
+    #[cfg(feature = "wkdcache")]
+    let cache = setup_cache();
 
     let host = SERVER_CONFIG.host;
     let port = SERVER_CONFIG.port;
@@ -88,7 +110,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("Starting server on http://{host}:{port}");
     log::info!("Swagger UI available at http://{host}:{port}/api-docs/ui/");
     HttpServer::new(move || {
-        App::new()
+        let app = App::new()
             .app_data(handlebars_ref.clone())
             .service(lookup)
             .service(api)
@@ -100,7 +122,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(setup_error_handlers_middleware())
             .wrap(setup_logging_middleware())
             .wrap(setup_compression_middleware())
-            .wrap(setup_default_headers_middleware())
+            .wrap(setup_default_headers_middleware());
+
+        #[cfg(feature = "wkdcache")]
+        let app = app.app_data(cache.clone());
+
+        app
     })
     .bind((host, port))?
     .run()
