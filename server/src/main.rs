@@ -100,6 +100,14 @@ async fn main() -> std::io::Result<()> {
     #[cfg(feature = "wkd-cache")]
     let cache = setup_cache();
 
+    #[cfg(feature = "wkd-cache")]
+    {
+        let cache = cache.clone();
+        tokio::spawn(async move {
+            cache.sweep_task().await;
+        });
+    }
+
     let host = SERVER_CONFIG.host;
     let port = SERVER_CONFIG.port;
 

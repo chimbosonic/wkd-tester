@@ -71,33 +71,21 @@ pub struct WkdKey {
 pub async fn get_wkd_cached(
     email: &String,
     cache: &actix_web::web::Data<crate::WebCache>,
-) -> (
-    WkdResult,
-    Option<impl Future<Output = Result<(), crate::cache::CacheError>>>,
-) {
+) -> (WkdResult, Option<impl Future<Output = ()>>) {
     match cache.get(email).await {
-        Ok(Some(result)) => (result.data, None),
-        Ok(None) => {
+        Some(result) => (result.data, None),
+        None => {
             let res = get_wkd(email).await;
             let cache_set_future = cache.set(email.to_string(), res.clone());
             (res, Some(cache_set_future))
-        }
-        Err(err) => {
-            log::error!("Failed to get email from cache: {}", err);
-            let res = get_wkd(email).await;
-            (res, None)
         }
     }
 }
 
 #[cfg(feature = "wkd-cache")]
-pub async fn unwrap_cache_future(
-    cache_set_future: Option<impl Future<Output = Result<(), crate::cache::CacheError>>>,
-) {
-    if let Some(fut) = cache_set_future
-        && let Err(err) = fut.await
-    {
-        log::error!("Failed to set email in cache: {}", err);
+pub async fn unwrap_cache_future(cache_set_future: Option<impl Future<Output = ()>>) {
+    if let Some(fut) = cache_set_future {
+        fut.await
     }
 }
 
