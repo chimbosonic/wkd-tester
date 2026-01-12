@@ -6,10 +6,10 @@ mod wkd_result;
 #[cfg(feature = "otel")]
 mod telemetry;
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 mod cache;
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 use {
     crate::{cache::Cache, wkd_result::WkdResult},
     std::time::Duration,
@@ -79,10 +79,10 @@ fn setup_error_handlers_middleware<B: 'static>() -> middleware::ErrorHandlers<B>
         .handler(StatusCode::BAD_REQUEST, add_error_header)
 }
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 type WebCache = Cache<String, WkdResult>;
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 fn setup_cache() -> web::Data<WebCache> {
     let time_to_live = Duration::from_secs(10);
 
@@ -97,7 +97,7 @@ async fn main() -> std::io::Result<()> {
     #[cfg(not(feature = "otel"))]
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let cache = setup_cache();
 
     let host = SERVER_CONFIG.host;
@@ -124,7 +124,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(setup_compression_middleware())
             .wrap(setup_default_headers_middleware());
 
-        #[cfg(feature = "wkdcache")]
+        #[cfg(feature = "wkd-cache")]
         let app = app.app_data(cache.clone());
 
         app

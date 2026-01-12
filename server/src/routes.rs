@@ -1,4 +1,4 @@
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 use crate::WebCache;
 
 use crate::render;
@@ -55,7 +55,7 @@ struct FormData {
 #[cfg_attr(feature = "otel", tracing::instrument)]
 pub async fn api(
     form: web::Query<FormData>,
-    #[cfg(feature = "wkdcache")] cache: web::Data<WebCache>,
+    #[cfg(feature = "wkd-cache")] cache: web::Data<WebCache>,
 ) -> Result<impl Responder> {
     let email = match &form.email {
         Some(email) => email,
@@ -64,17 +64,17 @@ pub async fn api(
         }
     };
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
 
-    #[cfg(not(feature = "wkdcache"))]
+    #[cfg(not(feature = "wkd-cache"))]
     let result = wkd_result::get_wkd(email).await;
 
     let result = web::Json(result)
         .customize()
         .insert_header((CACHE_CONTROL, "no-store"));
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     wkd_result::unwrap_cache_future(cache_set_future).await;
 
     Ok(result)
@@ -85,7 +85,7 @@ pub async fn api(
 pub async fn lookup(
     form: web::Query<FormData>,
     hb: web::Data<Handlebars<'_>>,
-    #[cfg(feature = "wkdcache")] cache: web::Data<WebCache>,
+    #[cfg(feature = "wkd-cache")] cache: web::Data<WebCache>,
 ) -> HttpResponse {
     let email = match &form.email {
         Some(email) => email,
@@ -102,10 +102,10 @@ pub async fn lookup(
         }
     };
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
 
-    #[cfg(not(feature = "wkdcache"))]
+    #[cfg(not(feature = "wkd-cache"))]
     let result = wkd_result::get_wkd(email).await;
 
     let mut response = render(hb, "index", &Some(result));
@@ -116,7 +116,7 @@ pub async fn lookup(
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static("text/html"));
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     wkd_result::unwrap_cache_future(cache_set_future).await;
 
     response

@@ -67,7 +67,7 @@ pub struct WkdKey {
     randomart: String,
 }
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 pub async fn get_wkd_cached(
     email: &String,
     cache: &actix_web::web::Data<crate::WebCache>,
@@ -90,7 +90,7 @@ pub async fn get_wkd_cached(
     }
 }
 
-#[cfg(feature = "wkdcache")]
+#[cfg(feature = "wkd-cache")]
 pub async fn unwrap_cache_future(
     cache_set_future: Option<impl Future<Output = Result<(), crate::cache::CacheError>>>,
 ) {

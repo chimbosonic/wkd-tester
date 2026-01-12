@@ -38,7 +38,7 @@ async fn test_lookup_no_email() {
         .wrap(setup_compression_middleware())
         .wrap(setup_default_headers_middleware());
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let app = {
         let cache = setup_cache();
         app.app_data(cache.clone())
@@ -70,7 +70,7 @@ async fn test_lookup_email() {
         .wrap(setup_compression_middleware())
         .wrap(setup_default_headers_middleware());
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let app = {
         let cache = setup_cache();
         app.app_data(cache.clone())
@@ -118,7 +118,7 @@ async fn test_api_no_email() {
         .wrap(setup_compression_middleware())
         .wrap(setup_default_headers_middleware());
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let app = {
         let cache = setup_cache();
         app.app_data(cache.clone())
@@ -144,7 +144,7 @@ async fn test_api_email() {
         .wrap(setup_compression_middleware())
         .wrap(setup_default_headers_middleware());
 
-    #[cfg(feature = "wkdcache")]
+    #[cfg(feature = "wkd-cache")]
     let app = {
         let cache = setup_cache();
         app.app_data(cache.clone())
