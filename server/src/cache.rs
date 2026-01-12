@@ -23,6 +23,7 @@ pub struct Entry<T> {
 
 type Result<T> = std::result::Result<T, CacheError>;
 
+#[derive(Debug)]
 pub struct Cache<K, V>
 where
     K: Eq + Hash + Send + Sync,
