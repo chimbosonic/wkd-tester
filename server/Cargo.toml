@@ -37,7 +37,7 @@ serde_json = "1.0.149"
 tokio = { version = "1.49.0", features = ["full"] }
 
 [features]
-default = ["embed-static"]
+default = ["embed-static", "wkdcache"]
 otel = [
     "wkd/tracing",
     "dep:tracing-subscriber",
