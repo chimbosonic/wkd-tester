@@ -21,6 +21,7 @@ use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{App, HttpServer, Result, middleware, web};
 use config::SERVER_CONFIG;
 use handlebars::Handlebars;
+use reqwest::Client;
 use routes::{ApiDoc, api, lookup, serve_sitemap};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -51,6 +52,10 @@ fn setup_handlebars() -> web::Data<Handlebars<'static>> {
     }
 
     web::Data::new(handlebars)
+}
+
+fn setup_reqwest_client() -> web::Data<Client> {
+    web::Data::new(Client::new())
 }
 
 fn add_error_header<B>(
@@ -112,7 +117,7 @@ async fn main() -> std::io::Result<()> {
     let port = SERVER_CONFIG.port;
 
     let handlebars_ref = setup_handlebars();
-
+    let reqwest_client_ref = setup_reqwest_client();
     let openapi = ApiDoc::openapi();
 
     log::info!("Starting server on http://{host}:{port}");
@@ -120,6 +125,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let app = App::new()
             .app_data(handlebars_ref.clone())
+            .app_data(reqwest_client_ref.clone())
             .service(lookup)
             .service(api)
             .service(serve_sitemap)

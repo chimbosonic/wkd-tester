@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -71,11 +72,12 @@ pub struct WkdKey {
 pub async fn get_wkd_cached(
     email: &String,
     cache: &actix_web::web::Data<crate::WebCache>,
+    reqwest_client: Client,
 ) -> (WkdResult, Option<impl Future<Output = ()>>) {
     match cache.get(email).await {
         Some(result) => (result.data, None),
         None => {
-            let res = get_wkd(email).await;
+            let res = get_wkd(email, reqwest_client).await;
             let cache_set_future = cache.set(email.to_string(), res.clone());
             (res, Some(cache_set_future))
         }
@@ -89,7 +91,7 @@ pub async fn unwrap_cache_future(cache_set_future: Option<impl Future<Output = (
     }
 }
 
-pub async fn get_wkd(user_id: &str) -> WkdResult {
+pub async fn get_wkd(user_id: &str, reqwest_client: Client) -> WkdResult {
     let wkd_uri = match wkd::uri::WkdUri::new(user_id) {
         Ok(wkd_uri) => wkd_uri,
         Err(err) => {
@@ -117,7 +119,7 @@ pub async fn get_wkd(user_id: &str) -> WkdResult {
         }
     };
 
-    let wkd_fetch = wkd::fetch::WkdFetch::fetch(&wkd_uri).await;
+    let wkd_fetch = wkd::fetch::WkdFetch::fetch(&wkd_uri, Some(reqwest_client.clone())).await;
     let methods = vec![
         WkdUriResult::from(
             wkd_fetch.direct_method,
@@ -235,7 +237,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_wkd() {
-        let wkd_result = get_wkd("test@chimbosonic.com").await;
+        let wkd_result = get_wkd("test@chimbosonic.com", Client::new()).await;
         println!("{:#?}", wkd_result);
         assert_eq!(wkd_result.user_id, "test@chimbosonic.com");
         assert_eq!(

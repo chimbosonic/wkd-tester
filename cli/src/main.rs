@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     println!("Advanced method URI: {}", wkd_uri.advanced_uri);
     println!("Direct method URI: {}", wkd_uri.direct_uri);
 
-    let wkd_fetch = WkdFetch::fetch(&wkd_uri).await;
+    let wkd_fetch = WkdFetch::fetch(&wkd_uri, None).await;
 
     unwrap_wkd_fetch(wkd_fetch.advanced_method, "Advanced");
     unwrap_wkd_fetch(wkd_fetch.direct_method, "Direct");

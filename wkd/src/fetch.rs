@@ -1,7 +1,7 @@
 use super::uri::{Uri, WkdUri};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
-use reqwest::Url;
+use reqwest::{Client, Url};
 
 use miette::Diagnostic;
 use thiserror::Error;
@@ -72,11 +72,13 @@ pub struct WkdFetch {
 
 impl WkdFetch {
     #[cfg_attr(feature = "tracing", tracing::instrument)]
-    pub async fn fetch(wkd_uri: &WkdUri) -> WkdFetch {
-        let direct_method = fetch_uri(&wkd_uri.direct_uri).await;
+    pub async fn fetch(wkd_uri: &WkdUri, reqwest_client: Option<Client>) -> WkdFetch {
+        let reqwest_client = reqwest_client.unwrap_or_default();
+
+        let direct_method = fetch_uri(&wkd_uri.direct_uri, reqwest_client.clone()).await;
         #[cfg(feature = "tracing")]
         event!(Level::TRACE, "Fetched Direct URI: {:?}", direct_method);
-        let advanced_method = fetch_uri(&wkd_uri.advanced_uri).await;
+        let advanced_method = fetch_uri(&wkd_uri.advanced_uri, reqwest_client).await;
 
         #[cfg(feature = "tracing")]
         event!(Level::TRACE, "Fetched Direct URI: {:?}", advanced_method);
@@ -155,6 +157,7 @@ async fn check_policy_file(
 
 async fn fetch_uri<T>(
     uri: &(impl Uri<T> + std::fmt::Debug + std::string::ToString),
+    reqwest_client: Client,
 ) -> WkdFetchUriResult {
     let mut result = WkdFetchUriResult {
         errors: Vec::new(),
@@ -171,24 +174,22 @@ async fn fetch_uri<T>(
         }
     };
 
-    let client = reqwest::Client::new();
-
-    match check_head_method(&client, url.as_str()).await {
+    match check_head_method(&reqwest_client, url.as_str()).await {
         Ok(success) => result.successes.push(success),
         Err(error) => result.errors.push(error),
     }
 
-    match check_for_indexing(&client, url.as_str()).await {
+    match check_for_indexing(&reqwest_client, url.as_str()).await {
         Ok(success) => result.successes.push(success),
         Err(error) => result.errors.push(error),
     }
 
-    match check_policy_file(&client, url.as_str()).await {
+    match check_policy_file(&reqwest_client, url.as_str()).await {
         Ok(success) => result.successes.push(success),
         Err(error) => result.errors.push(error),
     }
 
-    let response = match client.get(url).send().await {
+    let response = match reqwest_client.get(url).send().await {
         Ok(response) => response,
         Err(err) => {
             result.errors.push(WkdFetchError::FailedToFetchUrl(err));
@@ -320,7 +321,7 @@ mod tests {
             .with_header("access-control-allow-origin", "*")
             .create();
 
-        let result = fetch_uri(&test_uri).await;
+        let result = fetch_uri(&test_uri, Client::new()).await;
         assert_eq!(result.errors.len(), 0);
         assert!(result.data.is_some());
         assert!(result.timestamp - Utc::now() < TimeDelta::seconds(10));
@@ -329,7 +330,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_uri_invalid_url() {
-        let result = fetch_uri(&TestUri("not_a_url".to_string())).await;
+        let result = fetch_uri(&TestUri("not_a_url".to_string()), Client::new()).await;
         eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 1);
         assert!(matches!(
@@ -340,7 +341,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_uri_fetch_error() {
-        let result = fetch_uri(&TestUri("http://doesnotexist".to_string())).await;
+        let result = fetch_uri(&TestUri("http://doesnotexist".to_string()), Client::new()).await;
         eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 3);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
@@ -364,7 +365,7 @@ mod tests {
             .with_status(404)
             .create();
 
-        let result = fetch_uri(&test_uri).await;
+        let result = fetch_uri(&test_uri, Client::new()).await;
         eprintln!("{result:?}");
         assert_eq!(result.errors.len(), 3);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
@@ -385,7 +386,7 @@ mod tests {
             mock_server.host_with_port(),
             test_path
         ));
-        let result = fetch_uri(&test_uri).await;
+        let result = fetch_uri(&test_uri, Client::new()).await;
         eprintln!("{result:?}");
 
         assert_eq!(result.errors.len(), 3);
@@ -426,7 +427,7 @@ mod tests {
             .with_body([])
             .create();
 
-        let result = fetch_uri(&test_uri).await;
+        let result = fetch_uri(&test_uri, Client::new()).await;
         eprintln!("{result:?}");
 
         assert_eq!(result.errors.len(), 5);

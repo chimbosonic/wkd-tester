@@ -8,6 +8,7 @@ use actix_web::http::header::{CACHE_CONTROL, CONTENT_TYPE, HeaderValue};
 use actix_web::{HttpResponse, Responder, Result, get, web};
 use handlebars::Handlebars;
 use render::render;
+use reqwest::Client;
 use serde::Deserialize;
 use utoipa::OpenApi;
 
@@ -55,6 +56,7 @@ struct FormData {
 #[cfg_attr(feature = "otel", tracing::instrument)]
 pub async fn api(
     form: web::Query<FormData>,
+    rq: web::Data<Client>,
     #[cfg(feature = "wkd-cache")] cache: web::Data<WebCache>,
 ) -> Result<impl Responder> {
     let email = match &form.email {
@@ -65,10 +67,11 @@ pub async fn api(
     };
 
     #[cfg(feature = "wkd-cache")]
-    let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
+    let (result, cache_set_future) =
+        wkd_result::get_wkd_cached(email, &cache, rq.as_ref().clone()).await;
 
     #[cfg(not(feature = "wkd-cache"))]
-    let result = wkd_result::get_wkd(email).await;
+    let result = wkd_result::get_wkd(email, rq.as_ref().clone()).await;
 
     let result = web::Json(result)
         .customize()
@@ -85,6 +88,7 @@ pub async fn api(
 pub async fn lookup(
     form: web::Query<FormData>,
     hb: web::Data<Handlebars<'_>>,
+    rq: web::Data<Client>,
     #[cfg(feature = "wkd-cache")] cache: web::Data<WebCache>,
 ) -> HttpResponse {
     let email = match &form.email {
@@ -103,10 +107,11 @@ pub async fn lookup(
     };
 
     #[cfg(feature = "wkd-cache")]
-    let (result, cache_set_future) = wkd_result::get_wkd_cached(email, &cache).await;
+    let (result, cache_set_future) =
+        wkd_result::get_wkd_cached(email, &cache, rq.as_ref().clone()).await;
 
     #[cfg(not(feature = "wkd-cache"))]
-    let result = wkd_result::get_wkd(email).await;
+    let result = wkd_result::get_wkd(email, rq.as_ref().clone()).await;
 
     let mut response = render(hb, "index", &Some(result));
     response

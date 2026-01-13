@@ -32,6 +32,7 @@ async fn test_lookup_no_email() {
 
     let app = App::new()
         .app_data(handlebars_ref.clone())
+        .app_data(setup_reqwest_client())
         .service(lookup)
         .wrap(setup_error_handlers_middleware())
         .wrap(setup_logging_middleware())
@@ -64,6 +65,7 @@ async fn test_lookup_email() {
     let handlebars_ref = setup_handlebars();
     let app = App::new()
         .app_data(handlebars_ref.clone())
+        .app_data(setup_reqwest_client())
         .service(lookup)
         .wrap(setup_error_handlers_middleware())
         .wrap(setup_logging_middleware())
@@ -112,6 +114,7 @@ async fn test_api_not_found() {
 #[actix_web::test]
 async fn test_api_no_email() {
     let app = App::new()
+        .app_data(setup_reqwest_client())
         .service(api)
         .wrap(setup_error_handlers_middleware())
         .wrap(setup_logging_middleware())
@@ -138,6 +141,7 @@ async fn test_api_no_email() {
 #[actix_web::test]
 async fn test_api_email() {
     let app = App::new()
+        .app_data(setup_reqwest_client())
         .service(api)
         .wrap(setup_error_handlers_middleware())
         .wrap(setup_logging_middleware())

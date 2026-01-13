@@ -21,4 +21,4 @@ And that you have k6 is installed by following these [docs](https://grafana.com/
 To run the tests provide the env you want to run agains't and provide an output location
 
 - fish: `set -x ENV "env"; k6 run test.script.js -o csv=./results/${ENV}-$(date +%s).csv`
-- bash: `export ENV="env"; k6 run test.script.js -o csv=./results/${ENV}-$(date +%s).csv`
+- bash: `export ENV="env"; k6 run test.script.js -o csv=./results/$ENV-$(date +%s).csv`

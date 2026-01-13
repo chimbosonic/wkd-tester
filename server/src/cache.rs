@@ -113,7 +113,7 @@ where
     }
 
     async fn sweep(&self) -> bool {
-        log::info!(
+        log::debug!(
             "Sweeping cache...Cache size before sweep: {}",
             self.cache_size().await
         );
