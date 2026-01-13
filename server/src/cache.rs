@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     hash::Hash,
     sync::Arc,
     time::{Duration, Instant},
@@ -21,7 +20,7 @@ where
     V: Send + Sync + Clone,
 {
     store: Arc<RwLock<HashMap<K, Entry<V>>>>,
-    key_filo: Arc<RwLock<VecDeque<K>>>,
+    key_fifo: Arc<RwLock<VecDeque<K>>>,
     ttl: Duration,
 }
 
@@ -45,28 +44,28 @@ where
 {
     pub fn new(ttl: Duration) -> Self {
         let map: HashMap<K, Entry<V>> = HashMap::new();
-        let key_filo: VecDeque<K> = VecDeque::new();
+        let key_fifo: VecDeque<K> = VecDeque::new();
 
         Cache {
             store: Arc::new(RwLock::new(map)),
-            key_filo: Arc::new(RwLock::new(key_filo)),
+            key_fifo: Arc::new(RwLock::new(key_fifo)),
             ttl,
         }
     }
 
-    pub async fn set(&self, key: K, value: V) -> () {
+    pub async fn set(&self, key: K, value: V) {
         let mut store = self.store.write().await;
 
-        store.insert(key.clone(), Entry::new(value));
+        if store.insert(key.clone(), Entry::new(value)).is_none() {
+            let mut key_fifo = self.key_fifo.write().await;
+
+            key_fifo.push_front(key.clone());
+            drop(key_fifo);
+        };
         drop(store);
-
-        let mut key_filo = self.key_filo.write().await;
-
-        key_filo.push_front(key.clone());
-        drop(key_filo);
     }
 
-    pub async fn get(&self, key: &K) -> Option<Entry<V>> {
+    pub async fn get(&self, key: &K) -> Option<V> {
         let store = self.store.read().await;
 
         let entry = match store.get(key) {
@@ -81,7 +80,7 @@ where
             return None;
         }
 
-        Some(entry.clone())
+        Some(entry.data.clone())
     }
 
     async fn cache_size(&self) -> usize {
@@ -89,16 +88,16 @@ where
         store.len()
     }
 
-    async fn keyfilo_pop_back(&self) -> Option<K> {
-        let mut key_filo = self.key_filo.write().await;
+    async fn keyfifo_pop_back(&self) -> Option<K> {
+        let mut key_fifo = self.key_fifo.write().await;
 
-        key_filo.pop_back()
+        key_fifo.pop_back()
     }
 
-    async fn keyfilo_push_back(&self, key: K) {
-        let mut key_filo = self.key_filo.write().await;
+    async fn keyfifo_push_back(&self, key: K) {
+        let mut key_fifo = self.key_fifo.write().await;
 
-        key_filo.push_back(key)
+        key_fifo.push_back(key)
     }
 
     async fn get_timestamp(&self, key: &K) -> Option<Instant> {
@@ -118,14 +117,14 @@ where
             self.cache_size().await
         );
 
-        if let Some(key) = self.keyfilo_pop_back().await
+        if let Some(key) = self.keyfifo_pop_back().await
             && let Some(timestamp) = self.get_timestamp(&key).await
         {
             if timestamp.elapsed() > self.ttl {
                 self.store_remove(&key).await;
                 return true;
             } else {
-                self.keyfilo_push_back(key).await;
+                self.keyfifo_push_back(key).await;
             }
         }
 
@@ -171,7 +170,7 @@ mod tests {
 
         let result = cache.get(&key).await;
 
-        assert_eq!(result.unwrap().data, value);
+        assert_eq!(result.unwrap(), value);
     }
 
     #[tokio::test]

@@ -75,7 +75,7 @@ pub async fn get_wkd_cached(
     reqwest_client: Client,
 ) -> (WkdResult, Option<impl Future<Output = ()>>) {
     match cache.get(email).await {
-        Some(result) => (result.data, None),
+        Some(result) => (result, None),
         None => {
             let res = get_wkd(email, reqwest_client).await;
             let cache_set_future = cache.set(email.to_string(), res.clone());
