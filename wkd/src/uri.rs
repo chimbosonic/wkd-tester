@@ -48,6 +48,10 @@ pub enum WkdUriError {
         )
     )]
     InvalidEmailError,
+
+    #[error("Invalid domain part")]
+    #[diagnostic(code(wkd_uri::parse_email))]
+    InvalidDomainError,
 }
 
 impl UserHash {
@@ -108,6 +112,7 @@ impl Uri<DirectUri> for DirectUri {
         let scheme = Self::SCHEME;
         let path = Self::PATH;
         let hostname = domain_part;
+
         let uri = format!("{scheme}{hostname}/{path}/{user_hash}?l={local_part}");
         DirectUri(uri)
     }
@@ -125,12 +130,22 @@ impl Uri<AdvancedUri> for AdvancedUri {
     }
 }
 
-fn parse_email(email: &str) -> Result<(&str, &str), WkdUriError> {
+fn parse_email(email: &str) -> Result<(String, String), WkdUriError> {
     let parts: Vec<&str> = email.split('@').collect();
+
     if parts.len() != 2 {
         return Err(WkdUriError::InvalidEmailError);
     }
-    Ok((parts[0], parts[1]))
+
+    let local_part = parts[0].to_string();
+    let domain_part = parts[1];
+
+    let domain_part = match url::Host::parse(domain_part) {
+        Ok(url::Host::Domain(domain)) => domain,
+        _ => return Err(WkdUriError::InvalidDomainError),
+    };
+
+    Ok((local_part, domain_part))
 }
 
 /// WkdUri struct that contains the domain_part, user_hash, local_part, advanced_uri and direct_uri
@@ -159,7 +174,7 @@ impl WkdUri {
             local_part,
             domain_part
         );
-        let user_hash = UserHash::new(local_part);
+        let user_hash = UserHash::new(&local_part);
         #[cfg(feature = "tracing")]
         event!(
             Level::TRACE,
@@ -167,10 +182,10 @@ impl WkdUri {
             user_hash
         );
 
-        let advanced_uri = AdvancedUri::new(domain_part, local_part, &user_hash);
+        let advanced_uri = AdvancedUri::new(&domain_part, &local_part, &user_hash);
         #[cfg(feature = "tracing")]
         event!(Level::TRACE, "Generated AdvancedUri: {:?}", advanced_uri);
-        let direct_uri = DirectUri::new(domain_part, local_part, &user_hash);
+        let direct_uri = DirectUri::new(&domain_part, &local_part, &user_hash);
         #[cfg(feature = "tracing")]
         event!(Level::TRACE, "Generated DirectUri: {:?}", direct_uri);
 
@@ -270,6 +285,13 @@ mod tests {
     #[test]
     fn parse_email_err() {
         let test_email = "test";
+        let result = parse_email(test_email);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_email_err_invalid_domain() {
+        let test_email = "test@localhost:3000/blah";
         let result = parse_email(test_email);
         assert!(result.is_err());
     }

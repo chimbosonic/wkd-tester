@@ -9,6 +9,8 @@ use thiserror::Error;
 #[cfg(feature = "tracing")]
 use tracing::{Level, event};
 
+pub static MAX_KEY_SIZE: usize = 2 + 1024 * 1024; // 2 MB
+
 #[derive(Error, Diagnostic, Debug)]
 pub enum WkdFetchError {
     #[error("WKD URI provided is not a valid URL")]
@@ -54,6 +56,10 @@ pub enum WkdFetchError {
     #[error("Could not generate policy file path from URL")]
     #[diagnostic(severity(Warning), code(wkd_fetch))]
     WkdPolicyFilePathGenerationFailed,
+
+    #[error("Response size exceeded 2 MB")]
+    #[diagnostic(severity(Error), code(wkd_fetch))]
+    ResponseSizeExceeded,
 }
 
 #[derive(Debug)]
@@ -219,14 +225,28 @@ async fn fetch_uri<T>(
             .push(WkdFetchError::AccessControlAllowOriginNotStar),
     }
 
-    let data = match response.bytes().await {
-        Ok(data) => Some(data),
+    if let Some(content_length) = response.content_length()
+        && content_length > MAX_KEY_SIZE as u64
+    {
+        result.errors.push(WkdFetchError::ResponseSizeExceeded);
+        return result;
+    }
+
+    result.data = match response.bytes().await {
+        Ok(data) => {
+            if data.len() > MAX_KEY_SIZE {
+                result.errors.push(WkdFetchError::ResponseSizeExceeded);
+                return result;
+            }
+
+            Some(data)
+        }
         Err(_) => {
             result.errors.push(WkdFetchError::NoDataReturned);
             None
         }
     };
-    result.data = data;
+
     result
 }
 
@@ -305,13 +325,12 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "application/octet-stream")
             .with_header("access-control-allow-origin", "*")
-            .with_body([])
+            .with_body("h")
             .create();
 
         mock_server
             .mock("GET", test_policy_path.as_str())
             .with_status(200)
-            // .with_body([])
             .create();
 
         mock_server
@@ -412,6 +431,7 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "text/plain")
             .with_header("access-control-allow-origin", "example.org")
+            .with_body("body")
             .create();
 
         mock_server
@@ -432,7 +452,6 @@ mod tests {
 
         assert_eq!(result.errors.len(), 5);
         assert!(matches!(result.errors[0], WkdFetchError::FailedHeadMethod));
-
         assert!(matches!(
             result.errors[1],
             WkdFetchError::WkdPathShouldNotHaveIndex
@@ -450,5 +469,41 @@ mod tests {
             WkdFetchError::AccessControlAllowOriginNotStar
         ));
         assert!(result.data.is_some());
+    }
+
+    #[tokio::test]
+    async fn fetch_uri_error_on_content_length_oversize() {
+        let (mut mock_server, test_uri, test_path, test_policy_path) =
+            TestUri::create_test_uri_mock().await;
+        let size = MAX_KEY_SIZE + 1;
+        mock_server
+            .mock("GET", test_path.as_str())
+            .with_status(200)
+            .with_header("content-type", "application/octet-stream")
+            .with_header("access-control-allow-origin", "*")
+            .with_body(vec![0u8; size])
+            .create();
+
+        mock_server
+            .mock("GET", test_policy_path.as_str())
+            .with_status(200)
+            .create();
+
+        mock_server
+            .mock("HEAD", test_path.as_str())
+            .with_status(200)
+            .with_header("content-type", "application/octet-stream")
+            .with_header("access-control-allow-origin", "*")
+            .create();
+
+        let result = fetch_uri(&test_uri, Client::new()).await;
+        assert_eq!(result.errors.len(), 1);
+        assert!(matches!(
+            result.errors[0],
+            WkdFetchError::ResponseSizeExceeded
+        ));
+        assert!(result.data.is_none());
+        assert!(result.timestamp - Utc::now() < TimeDelta::seconds(10));
+        mock_server.reset();
     }
 }
