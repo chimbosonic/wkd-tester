@@ -17,6 +17,11 @@ pub struct ServerConfig {
     pub host: &'static str,
     /// The port to bind to.
     pub port: u16,
+    /// Client Timeout in milliseconds
+    pub client_timeout: u64,
+    /// Cache TTL in milliseconds
+    #[cfg(feature = "wkd-cache")]
+    pub cache_ttl: u64,
 }
 
 /// Make sure to update this with your information if you are self hosting.
@@ -31,6 +36,9 @@ pub static STATIC_CONTENT_CONFIG: StaticContentConfig = StaticContentConfig {
 pub static SERVER_CONFIG: ServerConfig = ServerConfig {
     host: "0.0.0.0",
     port: 7070,
+    client_timeout: 3000,
+    #[cfg(feature = "wkd-cache")]
+    cache_ttl: 10000,
 };
 
 #[cfg(feature = "embed-static")]

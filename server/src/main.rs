@@ -55,7 +55,12 @@ fn setup_handlebars() -> web::Data<Handlebars<'static>> {
 }
 
 fn setup_reqwest_client() -> web::Data<Client> {
-    web::Data::new(Client::new())
+    let client = Client::builder()
+        .timeout(Duration::from_millis(SERVER_CONFIG.client_timeout))
+        .build()
+        .expect("Failed to build reqwest client");
+
+    web::Data::new(client)
 }
 
 fn add_error_header<B>(
@@ -89,7 +94,7 @@ type WebCache = Cache<String, WkdResult>;
 
 #[cfg(feature = "wkd-cache")]
 fn setup_cache() -> web::Data<WebCache> {
-    let time_to_live = Duration::from_secs(10);
+    let time_to_live = Duration::from_millis(SERVER_CONFIG.cache_ttl);
 
     web::Data::new(WebCache::new(time_to_live))
 }
