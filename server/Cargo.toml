@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-actix-web = { version = "4.12.1", features = ["rustls"] }
+actix-web = { version = "4.13.0", features = ["rustls"] }
 wkd = { path = "../wkd" }
+openpgp-tester-lib = { git = "https://github.com/chimbosonic/openpgp-tester-shared-lib.git" }
 serde = { version = "1.0.228", features = ["derive"] }
 handlebars = { version = "6.4.0", features = ["dir_source"] }
-env_logger = "0.11.8"
+env_logger = "0.11.9"
 log = "0.4.29"
 utoipa = { version = "5.4.0", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
@@ -29,14 +30,14 @@ opentelemetry-semantic-conventions = { version = "0.31.0", features = [
 tracing-core = { version = "0.1.36", optional = true }
 opentelemetry-stdout = { version = "0.31.0", optional = true }
 tracing = { version = "0.1.44", optional = true }
-chrono = {version = "0.4.42", features = ["serde"]}
-tokio = { version = "1.49.0", features = ["rt"] , optional = true}
-reqwest = "0.13.1"
+chrono = {version = "0.4.44", features = ["serde"]}
+tokio = { version = "1.50.0", features = ["rt"] , optional = true}
+reqwest = "0.13.2"
 
 
 [dev-dependencies]
 serde_json = "1.0.149"
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.50.0", features = ["full"] }
 
 [features]
 default = ["embed-static","wkd-cache"]

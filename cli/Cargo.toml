@@ -12,8 +12,9 @@ name = "wkd-tester"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive"] }
 miette = { version = "7.6.0", features = ["fancy"] }
 wkd = { path = "../wkd" }
-tokio = { version = "1.49.0", features = ["full"] }
-thiserror = "2.0.17"
+tokio = { version = "1.50.0", features = ["full"] }
+thiserror = "2.0.18"
+openpgp-tester-lib = { git = "https://github.com/chimbosonic/openpgp-tester-shared-lib.git" }

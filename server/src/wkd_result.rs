@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use openpgp_tester_lib::load;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -145,7 +146,7 @@ impl WkdUriResult {
         method_type: WkdMethodType,
     ) -> Self {
         let key: Option<WkdKey> = match wkd_fetch.data {
-            Some(data) => wkd::load::load_key(data).ok().map(WkdKey::from),
+            Some(data) => load::load_key(data).ok().map(WkdKey::from),
             None => None,
         };
 
@@ -170,7 +171,7 @@ impl WkdError {
 }
 
 impl WkdKey {
-    pub fn from(wkd_key: wkd::load::WkdKey) -> Self {
+    pub fn from(wkd_key: load::Key) -> Self {
         WkdKey {
             fingerprint: wkd_key.fingerprint,
             revocation_status: wkd_key.revocation_status,
@@ -188,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_wkd_key_from() {
-        let wkd_key = wkd::load::WkdKey {
+        let wkd_key = load::Key {
             fingerprint: "fingerprint".to_string(),
             revocation_status: "revocation_status".to_string(),
             expiry: "expiry".to_string(),

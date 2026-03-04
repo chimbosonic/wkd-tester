@@ -1,8 +1,8 @@
 use clap::Parser;
 use miette::Report;
 use miette::Result;
+use openpgp_tester_lib::load::load_key;
 use wkd::fetch::{WkdFetch, WkdFetchUriResult};
-use wkd::load::load_key;
 use wkd::uri::WkdUri;
 
 #[derive(Parser, Debug)]
