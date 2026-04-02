@@ -9,15 +9,15 @@ wkd = { path = "../wkd" }
 openpgp-tester-lib = { git = "https://github.com/chimbosonic/openpgp-tester-shared-lib.git" }
 serde = { version = "1.0.228", features = ["derive"] }
 handlebars = { version = "6.4.0", features = ["dir_source"] }
-env_logger = "0.11.9"
+env_logger = "0.11.10"
 log = "0.4.29"
 utoipa = { version = "5.4.0", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
-tracing-subscriber = { version = "0.3.22", features = [
+tracing-subscriber = { version = "0.3.23", features = [
     "env-filter",
     "fmt",
 ], optional = true }
-opentelemetry-otlp = { version = "0.31.0", features = [
+opentelemetry-otlp = { version = "0.31.1", features = [
     "grpc-tonic",
     "metrics",
 ], optional = true }
