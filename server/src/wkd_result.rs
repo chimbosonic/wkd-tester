@@ -145,15 +145,26 @@ impl WkdUriResult {
         uri: impl std::string::ToString,
         method_type: WkdMethodType,
     ) -> Self {
-        let key: Option<WkdKey> = match wkd_fetch.data {
-            Some(data) => load::load_key(data).ok().map(WkdKey::from),
-            None => None,
-        };
+        let mut errors: Vec<WkdError> = wkd_fetch.errors.iter().map(WkdError::from).collect();
+
+        let key: Option<WkdKey> =
+            wkd_fetch
+                .data
+                .and_then(|key_data| match load::load_key(key_data) {
+                    Ok(key) => Some(WkdKey::from(key)),
+                    Err(err) => {
+                        errors.push(WkdError {
+                            name: "FailedToLoadKey".to_string(),
+                            message: format!("{err:?}"),
+                        });
+                        None
+                    }
+                });
 
         WkdUriResult {
             uri: uri.to_string(),
             key,
-            errors: wkd_fetch.errors.iter().map(WkdError::from).collect(),
+            errors,
             successes: wkd_fetch.successes.iter().map(WkdSuccess::from).collect(),
             method_type,
             timestamp: wkd_fetch.timestamp,
@@ -186,6 +197,30 @@ impl WkdKey {
 mod tests {
     use super::*;
     use chrono::Utc;
+
+    #[test]
+    fn test_wkd_key_from_load_key_error() {
+        let invalid_data = bytes::Bytes::from_static(b"not a valid pgp key");
+        let wkd_fetch = wkd::fetch::WkdFetchUriResult {
+            successes: vec![],
+            errors: vec![],
+            data: Some(invalid_data),
+            timestamp: Utc::now(),
+        };
+
+        let wkd_uri_result = WkdUriResult::from(wkd_fetch, "uri", WkdMethodType::Direct);
+
+        assert!(
+            wkd_uri_result.key.is_none(),
+            "key should be None when load_key fails"
+        );
+        assert_eq!(wkd_uri_result.errors.len(), 1);
+        assert_eq!(wkd_uri_result.errors[0].name, "FailedToLoadKey");
+        assert_eq!(
+            wkd_uri_result.errors[0].message,
+            "FailedToParseKey(IO error: unknown packet header version 1101110\n\nCaused by:\n    unknown packet header version 1101110)"
+        );
+    }
 
     #[test]
     fn test_wkd_key_from() {
